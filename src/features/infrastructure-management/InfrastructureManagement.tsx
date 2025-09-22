@@ -6,6 +6,7 @@ import ReactFlow, {
   Connection,
   Controls,
   Edge,
+  MarkerType,
   MiniMap,
   Node,
   ReactFlowInstance,
@@ -25,7 +26,16 @@ export default function InfrastructureManagement() {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
 
   const onConnect = useCallback(
-    (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
+    (params: Edge | Connection) =>
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...params,
+            markerStart: { type: MarkerType.ArrowClosed, width: 24, height: 24 },
+          },
+          eds
+        )
+      ),
     [setEdges]
   )
 
@@ -86,7 +96,7 @@ export default function InfrastructureManagement() {
   }
 
   return (
-    <div className="flex h-screen text-black">
+    <div className="flex text-black h-[calc(100vh-64px)]">
       {/* Sidebar */}
       <div className="w-48 bg-gray-100 p-3 border-r">
         <h2 className="font-bold mb-3">AWS Services</h2>
@@ -100,9 +110,6 @@ export default function InfrastructureManagement() {
             {svc}
           </div>
         ))}
-        <button onClick={exportConfig} className="mt-4 w-full bg-blue-500 text-white p-2 rounded">
-          Generate Config
-        </button>
       </div>
 
       {/* React Flow Canvas */}
@@ -118,6 +125,9 @@ export default function InfrastructureManagement() {
           onDragOver={onDragOver}
           onNodeClick={handleNodeClick}
           fitView
+          proOptions={{ hideAttribution: true }}
+          className="bg-black"
+          deleteKeyCode={['Delete', 'Backspace']}
         >
           <Background />
           <MiniMap />
