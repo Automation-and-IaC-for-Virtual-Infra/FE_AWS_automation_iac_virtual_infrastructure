@@ -1,5 +1,5 @@
-import InfrastructureManagement from '@/features/infrastructure-management/InfrastructureManagement'
+import Infrastructure from '@/features/infrastructure/Infrastructure'
 
-export default function InfrastructureManagementPage() {
-  return <InfrastructureManagement />
+export default function InfrastructurePage() {
+  return <Infrastructure />
 }
