@@ -1,4 +1,6 @@
-export const awsServiceData = [
+import { AwsService } from '@/features/aws/services/libs/types'
+
+export const awsServiceData: AwsService[] = [
   {
     id: 'iam-role',
     resourceType: 'AWS::IAM::Role',

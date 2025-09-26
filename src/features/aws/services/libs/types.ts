@@ -3,7 +3,8 @@ export interface AwsService {
   resourceType: string
   displayName: string
   config: Record<string, any>
-  connectedTo: string[]
+  connections: string[]
+  properties?: Record<string, any>
 }
 
 export interface ListAwsServicesResponse {

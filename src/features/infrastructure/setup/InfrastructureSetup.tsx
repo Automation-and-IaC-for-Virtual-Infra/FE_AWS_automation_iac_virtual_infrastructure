@@ -28,8 +28,17 @@ export default function InfrastructureSetup({ data }: { data: ListAwsServicesRes
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
 
+  const [searchValue, setSearchValue] = useState('')
+
+  const filteredServices = useMemo(() => {
+    if (!searchValue) return data.services
+    return data.services.filter((svc) =>
+      svc.displayName.toLowerCase().includes(searchValue.toLowerCase())
+    )
+  }, [data.services, searchValue])
+
   const onConnect = useCallback(
-    (params: Edge | Connection) =>
+    (params: Edge | Connection) => {
       setEdges((eds) =>
         addEdge(
           {
@@ -38,7 +47,8 @@ export default function InfrastructureSetup({ data }: { data: ListAwsServicesRes
           },
           eds
         )
-      ),
+      )
+    },
     [setEdges]
   )
 
@@ -91,7 +101,16 @@ export default function InfrastructureSetup({ data }: { data: ListAwsServicesRes
     setNodes((nds) =>
       nds.map((n) =>
         n.id === selectedNode?.id
-          ? { ...n, data: { ...n.data, config: { ...n.data.config, [key]: value } } }
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                service: {
+                  ...n.data.service,
+                  config: { ...n.data.service.config, [key]: value },
+                },
+              },
+            }
           : n
       )
     )
@@ -108,10 +127,15 @@ export default function InfrastructureSetup({ data }: { data: ListAwsServicesRes
       {/* Sidebar */}
       <div className="flex flex-col gap-2 min-w-56 bg-gray-100 p-3 border-r">
         <h2 className="font-bold">AWS Services</h2>
-        <Input className="rounded-sm" placeholder="Search AWS Services" />
+        <Input
+          className="rounded-sm"
+          placeholder="Search AWS Services"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+        />
 
         <div className="overflow-y-auto flex-1">
-          {data.services.map((svc) => (
+          {filteredServices.map((svc) => (
             <div
               key={svc.id}
               className="p-2 bg-white border rounded mb-2 cursor-move hover:bg-gray-200"
@@ -152,19 +176,23 @@ export default function InfrastructureSetup({ data }: { data: ListAwsServicesRes
 
       {/* Config Panel */}
       {selectedNode && (
-        <div className="w-64 bg-gray-50 border-l p-3">
+        <div className="w-64 bg-gray-50 border-l p-3 flex flex-col">
           <h3 className="font-bold mb-2">Config {selectedNode.data.service.displayName}</h3>
 
-          {Object.keys(selectedNode.data.service.config).map((cfgKey: string) => (
-            <div key={cfgKey} className="mb-2">
-              <label className="block text-sm font-medium mb-1">{cfgKey}</label>
-              <Input
-                value={selectedNode.data.service.config[cfgKey] || ''}
-                onChange={(e) => handleConfigChange(cfgKey, e.target.value)}
-                className="w-full"
-              />
-            </div>
-          ))}
+          <div className="flex-1">
+            {Object.keys(selectedNode.data.service.config).map((cfgKey: string) => (
+              <div key={cfgKey} className="mb-2">
+                <label className="block text-sm font-medium mb-1">{cfgKey}</label>
+                <Input
+                  value={selectedNode.data.service.config[cfgKey] || ''}
+                  onChange={(e) => handleConfigChange(cfgKey, e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* <Button>Save config</Button> */}
         </div>
       )}
     </div>

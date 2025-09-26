@@ -19,6 +19,7 @@ import { ROUTES } from '@/constants/route'
 const navItems = [
   { name: 'Dashboard', href: ROUTES.DASHBOARD },
   { name: 'Infrastructure', href: ROUTES.INFRASTRUCTURE },
+  { name: 'AWS services', href: ROUTES.AWS_SERVICES },
 ]
 
 export default function Header() {
