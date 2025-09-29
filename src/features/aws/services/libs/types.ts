@@ -2,8 +2,10 @@ export interface AwsService {
   id: string
   resourceType: string
   displayName: string
-  config: Record<string, any>
   connections: string[]
+  requiredProps: string[]
+  requiredConnections: string[]
+  recommendedConnections: string[]
   properties?: Record<string, any>
 }
 

@@ -1,6 +1,9 @@
 'use client'
 
+import PromptConfigBox from '@/components/PromptConfigBox'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { ListAwsServicesResponse } from '@/features/aws/services/libs/types'
 import { useCallback, useMemo, useState } from 'react'
 import ReactFlow, {
@@ -17,7 +20,7 @@ import ReactFlow, {
   useNodesState,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
-import { Input } from '@/components/ui/input'
+import { toast } from 'sonner'
 
 const initialNodes: Node[] = []
 const initialEdges: Edge[] = []
@@ -39,6 +42,28 @@ export default function InfrastructureSetup({ data }: { data: ListAwsServicesRes
 
   const onConnect = useCallback(
     (params: Edge | Connection) => {
+      const { source, target } = params
+      if (!source || !target) return
+
+      const sourceNode = nodes.find((n) => n.id === source)
+      const targetNode = nodes.find((n) => n.id === target)
+
+      // If node is not found or there is no connections configuration, do not allow connection
+      if (
+        !sourceNode ||
+        !sourceNode.data?.service?.connections ||
+        !Array.isArray(sourceNode.data.service.connections)
+      ) {
+        toast.error('These services cannot be connected.')
+        return
+      }
+
+      // If connections does not include target node's service id, do not allow connection
+      if (!sourceNode.data.service.connections.includes(targetNode?.data?.service?.id)) {
+        toast.error('These services cannot be connected.')
+        return
+      }
+
       setEdges((eds) =>
         addEdge(
           {
@@ -97,23 +122,29 @@ export default function InfrastructureSetup({ data }: { data: ListAwsServicesRes
     setSelectedNode(node)
   }
 
-  const handleConfigChange = (key: string, value: string) => {
-    setNodes((nds) =>
-      nds.map((n) =>
-        n.id === selectedNode?.id
-          ? {
-              ...n,
-              data: {
-                ...n.data,
-                service: {
-                  ...n.data.service,
-                  config: { ...n.data.service.config, [key]: value },
-                },
-              },
-            }
-          : n
-      )
-    )
+  const handleConfigChange = (key: string, value: string | boolean) => {
+    const { properties } = selectedNode?.data.service
+    const updatedNodes = [...nodes]
+    const nodeIndex = updatedNodes.findIndex((n) => n.id === selectedNode?.id)
+    if (nodeIndex === -1) return
+    updatedNodes[nodeIndex] = {
+      ...updatedNodes[nodeIndex],
+      data: {
+        ...updatedNodes[nodeIndex].data,
+        service: {
+          ...updatedNodes[nodeIndex].data.service,
+          properties: {
+            ...properties,
+            [key]: {
+              ...properties[key],
+              value,
+            },
+          },
+        },
+      },
+    }
+    setNodes(updatedNodes)
+    setSelectedNode(updatedNodes[nodeIndex])
   }
 
   const exportConfig = () => {
@@ -122,10 +153,12 @@ export default function InfrastructureSetup({ data }: { data: ListAwsServicesRes
     // fetch("/api/deploy", { method: "POST", body: JSON.stringify(payload) })
   }
 
+  console.log('🚀 ~ selectedNode:', selectedNode)
+
   return (
     <div className="flex text-black h-[calc(100vh-64px)] overflow-hidden">
       {/* Sidebar */}
-      <div className="flex flex-col gap-2 min-w-56 bg-gray-100 p-3 border-r">
+      <div className="flex flex-col gap-2 min-w-64 bg-gray-100 p-3 border-r">
         <h2 className="font-bold">AWS Services</h2>
         <Input
           className="rounded-sm"
@@ -176,23 +209,42 @@ export default function InfrastructureSetup({ data }: { data: ListAwsServicesRes
 
       {/* Config Panel */}
       {selectedNode && (
-        <div className="w-64 bg-gray-50 border-l p-3 flex flex-col">
-          <h3 className="font-bold mb-2">Config {selectedNode.data.service.displayName}</h3>
-
-          <div className="flex-1">
-            {Object.keys(selectedNode.data.service.config).map((cfgKey: string) => (
-              <div key={cfgKey} className="mb-2">
-                <label className="block text-sm font-medium mb-1">{cfgKey}</label>
-                <Input
-                  value={selectedNode.data.service.config[cfgKey] || ''}
-                  onChange={(e) => handleConfigChange(cfgKey, e.target.value)}
-                  className="w-full"
-                />
-              </div>
-            ))}
+        <div className="w-76 bg-gray-50 border-l p-3 flex flex-col gap-2">
+          <h3 className="font-bold">Config {selectedNode.data.service.displayName}</h3>
+          <div className="mb-2">
+            <PromptConfigBox />
           </div>
+          <div className="flex-1 overflow-y-auto px-2">
+            {Object.keys(selectedNode.data.service.properties).map((cfgKey: string) => {
+              const {
+                Required: isRequired,
+                PrimitiveType,
+                value,
+              } = selectedNode.data.service.properties[cfgKey]
+              const isBoolean = PrimitiveType === 'Boolean'
 
-          {/* <Button>Save config</Button> */}
+              return (
+                <div key={cfgKey} className="mb-2">
+                  <label className="block text-sm font-medium mb-1">
+                    {cfgKey}
+                    {isRequired && <span className="text-red-500">*</span>}
+                  </label>
+                  {isBoolean ? (
+                    <Switch
+                      checked={value}
+                      onCheckedChange={(checked) => handleConfigChange(cfgKey, checked)}
+                    />
+                  ) : (
+                    <Input
+                      value={value || ''}
+                      onChange={(e) => handleConfigChange(cfgKey, e.target.value)}
+                      className="w-full"
+                    />
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>
