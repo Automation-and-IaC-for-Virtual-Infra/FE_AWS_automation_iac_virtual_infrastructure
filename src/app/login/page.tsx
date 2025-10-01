@@ -12,47 +12,30 @@ export default function LoginPage() {
   const [mfaCode, setMfaCode] = useState('')
   const [cognitoUser, setCognitoUser] = useState<any>(null)
 
-  // ✅ Nếu đã có token thì tự redirect
   useEffect(() => {
     const token = localStorage.getItem('idToken')
-    if (token) {
-      window.location.href = '/' // tự đổi route nếu cần
-    }
+    if (token) window.location.href = '/'
   }, [])
 
   const saveSession = (session: any) => {
-    const idToken = session.getIdToken().getJwtToken()
-    const accessToken = session.getAccessToken().getJwtToken()
-    const refreshToken = session.getRefreshToken().getToken()
-
-    localStorage.setItem('idToken', idToken)
-    localStorage.setItem('accessToken', accessToken)
-    localStorage.setItem('refreshToken', refreshToken)
+    localStorage.setItem('idToken', session.getIdToken().getJwtToken())
+    localStorage.setItem('accessToken', session.getAccessToken().getJwtToken())
+    localStorage.setItem('refreshToken', session.getRefreshToken().getToken())
   }
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    const authDetails = new AuthenticationDetails({
-      Username: email,
-      Password: password,
-    })
-
-    const user = new CognitoUser({
-      Username: email,
-      Pool: userPool,
-    })
+    const authDetails = new AuthenticationDetails({ Username: email, Password: password })
+    const user = new CognitoUser({ Username: email, Pool: userPool })
 
     user.authenticateUser(authDetails, {
       onSuccess: (session) => {
         saveSession(session)
-        alert('Login thành công!')
         window.location.href = '/'
       },
-      onFailure: (err) => {
-        setError(err.message || 'Đăng nhập thất bại')
-      },
+      onFailure: (err) => setError(err.message || 'Đăng nhập thất bại'),
       mfaRequired: () => {
         setCognitoUser(user)
         setMfaRequired(true)
@@ -67,12 +50,9 @@ export default function LoginPage() {
     cognitoUser.sendMFACode(mfaCode, {
       onSuccess: (session: any) => {
         saveSession(session)
-        alert('MFA thành công!')
         window.location.href = '/'
       },
-      onFailure: (err: any) => {
-        setError(err.message || 'MFA thất bại')
-      },
+      onFailure: (err: any) => setError(err.message || 'MFA thất bại'),
     })
   }
 
@@ -84,84 +64,28 @@ export default function LoginPage() {
 
         {!mfaRequired ? (
           <>
-            <input
-              type="email"
-              placeholder="Email"
-              style={styles.input}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              style={styles.input}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <input style={styles.input} type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input style={styles.input} type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </>
         ) : (
-          <input
-            type="text"
-            placeholder="Nhập mã MFA"
-            style={styles.input}
-            value={mfaCode}
-            onChange={(e) => setMfaCode(e.target.value)}
-            required
-          />
+          <input style={styles.input} type="text" placeholder="Nhập mã MFA" value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} required />
         )}
 
-        <button
-          type="submit"
-          style={styles.button}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#005bb5')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#0070f3')}
-        >
-          {mfaRequired ? 'Xác nhận' : 'Login'}
-        </button>
+        <button style={styles.button} type="submit">{mfaRequired ? 'Xác nhận' : 'Login'}</button>
+
+        {!mfaRequired && (
+          <p style={styles.link} onClick={() => (window.location.href = '/register')}>Chưa có tài khoản? Đăng ký</p>
+        )}
       </form>
     </div>
   )
 }
 
-const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100vh',
-    background: '#f3f4f6',
-  },
-  form: {
-    width: '350px',
-    padding: '30px',
-    borderRadius: '10px',
-    background: 'white',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-    textAlign: 'center',
-  },
-  input: {
-    width: '100%',
-    padding: '12px',
-    margin: '10px 0',
-    borderRadius: '6px',
-    border: '1px solid #ccc',
-    fontSize: '14px',
-  },
-  button: {
-    width: '100%',
-    padding: '12px',
-    backgroundColor: '#0070f3',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '15px',
-    transition: 'background 0.3s ease',
-  },
-  error: {
-    color: 'red',
-    marginBottom: '10px',
-  },
+const styles: any = {
+  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f3f4f6' },
+  form: { width: '350px', padding: '30px', borderRadius: '10px', background: 'white', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', textAlign: 'center' },
+  input: { width: '100%', padding: '12px', margin: '10px 0', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' },
+  button: { width: '100%', padding: '12px', backgroundColor: '#0070f3', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '15px' },
+  error: { color: 'red', marginBottom: '10px' },
+  link: { marginTop: 10, cursor: 'pointer', color: '#0070f3' },
 }
