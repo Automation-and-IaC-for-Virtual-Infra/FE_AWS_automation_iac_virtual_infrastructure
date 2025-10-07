@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { awsServiceData } from './lib/data'
+import { listServices } from './lib/data'
 
 const AWS_CLOUD_FORMATION_URL =
   'https://d1uauaxba7bl26.cloudfront.net/latest/gzip/CloudFormationResourceSpecification.json'
@@ -22,7 +22,7 @@ export async function GET() {
       })
     )
 
-    const updatedAwsServiceData = awsServiceData.map((svc) => {
+    const updatedAwsServiceData = listServices.map((svc) => {
       const match = services.find((s) => s.name === svc.resourceType)
       if (match) {
         svc.properties = match.properties

@@ -1,11 +1,15 @@
+export interface AwsServiceConnection {
+  requiredConnections: string[]
+  recommendedConnections: string[]
+  optionalConnections: string[]
+}
+
 export interface AwsService {
   id: string
   resourceType: string
   displayName: string
-  connections: string[]
   requiredProps: string[]
-  requiredConnections: string[]
-  recommendedConnections: string[]
+  connections: AwsServiceConnection
   properties?: Record<string, any>
 }
 

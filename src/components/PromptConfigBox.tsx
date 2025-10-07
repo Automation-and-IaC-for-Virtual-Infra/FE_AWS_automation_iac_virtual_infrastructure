@@ -51,7 +51,7 @@ export default function PromptConfigBox() {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="E.g: Create an Elastic Load Balancer with 2 subnets and enable IPv6"
-          className="min-h-[150px]"
+          className="min-h-40 max-h-80 h-40"
         />
         <Button onClick={handleSubmit} disabled={loading} className="w-full">
           {loading ? (

@@ -4,5 +4,5 @@ import InfrastructureSetup from '@/features/infrastructure/setup/InfrastructureS
 export default async function InfrastructureSetupPage() {
   const res = await getAwsServices()
 
-  return <InfrastructureSetup data={res} />
+  return <InfrastructureSetup result={res} />
 }
