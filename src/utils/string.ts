@@ -1,11 +1,9 @@
+import { ENV } from '@/constants/env'
 import crypto from 'crypto'
 
-export const calculateSecretHash = (username: string) => {
-  const clientSecret = process.env.COGNITO_CLIENT_SECRET || ''
-  const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || ''
-
+export const getSecretHash = (username: string) => {
   return crypto
-    .createHmac('SHA256', clientSecret)
-    .update(username + clientId)
+    .createHmac('SHA256', ENV.COGNITO_CLIENT_SECRET)
+    .update(username + ENV.COGNITO_CLIENT_ID)
     .digest('base64')
 }
