@@ -6,7 +6,11 @@ const AWS_CLOUD_FORMATION_URL =
 
 export async function GET() {
   try {
-    const res = await fetch(AWS_CLOUD_FORMATION_URL)
+    const res = await fetch(AWS_CLOUD_FORMATION_URL, {
+      next: { revalidate: 86400 * 7 }, // Revalidate once a week
+      signal: AbortSignal.timeout(10000), // 10 seconds timeout
+      headers: { 'Content-Type': 'application/json' },
+    })
     if (!res.ok) {
       return NextResponse.json({ error: 'Failed to fetch CloudFormation spec' }, { status: 500 })
     }

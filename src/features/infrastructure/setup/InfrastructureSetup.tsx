@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import {
   AwsService,
   AwsServiceConnection,
-  ListAwsServicesResponse,
+  ListAwsServicesData,
 } from '@/features/aws/services/libs/types'
 import { useChatBot } from '@/hooks/useChatBot'
 import { formatCamelCase } from '@/utils/string.utils'
@@ -41,7 +41,7 @@ const BORDER_NODE = {
   optional: '2px solid #22c55e',
 }
 
-export default function InfrastructureSetup({ result }: { result: ListAwsServicesResponse }) {
+export default function InfrastructureSetup({ result }: { result: ListAwsServicesData }) {
   const { isOpen, setIsOpen, handleSendMessage } = useChatBot()
 
   const [nodes, setNodes, onNodesChange] = useNodesState<AwsService>(initialNodes)

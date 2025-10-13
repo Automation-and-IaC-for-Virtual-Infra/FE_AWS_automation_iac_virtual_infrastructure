@@ -6,6 +6,7 @@ export interface AwsServiceConnection {
 
 export interface AwsService {
   id: string
+  _generatedId?: string
   resourceType: string
   displayName: string
   requiredProps: string[]
@@ -13,7 +14,7 @@ export interface AwsService {
   properties?: Record<string, any>
 }
 
-export interface ListAwsServicesResponse {
+export interface ListAwsServicesData {
   count: number
   services: AwsService[]
 }
