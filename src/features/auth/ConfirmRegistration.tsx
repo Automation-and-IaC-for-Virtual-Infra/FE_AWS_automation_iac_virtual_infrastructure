@@ -61,6 +61,7 @@ export default function ConfirmRegistration() {
         toast.error(result.error || 'Verification failed')
       }
     } catch (error) {
+      console.log('🚀 ~ onSubmit ~ error:', error)
       toast.error('An unexpected error occurred')
     } finally {
       setIsLoading(false)
@@ -84,6 +85,7 @@ export default function ConfirmRegistration() {
         toast.error(result.error || 'Failed to resend code')
       }
     } catch (error) {
+      console.log('🚀 ~ handleResendCode ~ error:', error)
       toast.error('An unexpected error occurred')
     } finally {
       setIsResending(false)

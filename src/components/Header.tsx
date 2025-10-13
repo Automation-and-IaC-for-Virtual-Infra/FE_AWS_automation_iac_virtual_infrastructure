@@ -19,6 +19,7 @@ import { logoutAction } from '@/features/auth/lib/actions'
 const navItems = [
   { name: 'Dashboard', href: ROUTES.DASHBOARD },
   { name: 'Infrastructure', href: ROUTES.INFRASTRUCTURE },
+  { name: 'Notifications', href: ROUTES.NOTIFICATIONS },
 ]
 
 export default function Header() {

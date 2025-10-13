@@ -16,7 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { loginAction } from './lib/actions'
@@ -26,7 +26,6 @@ export default function Login() {
   const router = useRouter()
 
   const [isLoading, setIsLoading] = useState(false)
-  const [username, setUsername] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
   const loginForm = useForm<LoginSchemaType>({
@@ -36,17 +35,6 @@ export default function Login() {
       password: '',
     },
   })
-
-  useEffect(() => {
-    const token = localStorage.getItem('idToken')
-    if (token) window.location.href = ROUTES.DASHBOARD
-  }, [])
-
-  const saveSession = (session: any) => {
-    localStorage.setItem('idToken', session.getIdToken().getJwtToken())
-    localStorage.setItem('accessToken', session.getAccessToken().getJwtToken())
-    localStorage.setItem('refreshToken', session.getRefreshToken().getToken())
-  }
 
   const onLoginSubmit = async (values: LoginSchemaType) => {
     setIsLoading(true)

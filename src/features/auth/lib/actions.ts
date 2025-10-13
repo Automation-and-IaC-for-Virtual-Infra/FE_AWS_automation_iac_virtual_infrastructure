@@ -214,6 +214,7 @@ export async function verifyTokenAction(token: string): Promise<{
     }
     return { success: true, session: { idToken: token, accessToken: '' } }
   } catch (error) {
+    console.log('🚀 ~ verifyTokenAction ~ error:', error)
     return {
       success: false,
       error: 'Failed to fetch JWKS',
