@@ -41,6 +41,7 @@ export async function GET() {
 
     // return NextResponse.json({ count: awsServiceData.length, services: awsServiceData })
   } catch (error) {
+    console.error(error)
     return NextResponse.json({ error: 'Failed to fetch AWS services' }, { status: 500 })
   }
 }

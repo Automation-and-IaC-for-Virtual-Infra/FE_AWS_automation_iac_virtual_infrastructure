@@ -80,7 +80,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
 
   const calculatedConnectionStats = useCallback(
     (connections: AwsServiceConnection) => {
-      let stats = {
+      const stats = {
         required: 0,
         recommended: 0,
         optional: 0,
@@ -151,7 +151,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
       setIsConnecting(true)
       calculatedConnectionStats(connections)
     },
-    [nodes, setNodes]
+    [calculatedConnectionStats, nodes, setNodes]
   )
 
   const onConnectEnd = useCallback(() => {
@@ -263,7 +263,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
 
       setSelectedNode(newNode)
     },
-    [reactFlowInstance, setNodes]
+    [reactFlowInstance, result.services, setNodes]
   )
 
   const onDragOver = (event: React.DragEvent) => {
@@ -292,7 +292,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     const updatedNodes = [...nodes]
     const nodeIndex = updatedNodes.findIndex((n) => n.id === selectedNode?.id)
     if (nodeIndex === -1) return
-    ;((updatedNodes[nodeIndex] = {
+    updatedNodes[nodeIndex] = {
       ...updatedNodes[nodeIndex],
       data: {
         ...updatedNodes[nodeIndex].data,
@@ -304,8 +304,9 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
           },
         },
       },
-    }),
-      setNodes(updatedNodes))
+    }
+
+    setNodes(updatedNodes)
     setSelectedNode(updatedNodes[nodeIndex])
   }
 
@@ -415,6 +416,8 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     if (nodes.length === 0) {
       setIsOpen(true)
     }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

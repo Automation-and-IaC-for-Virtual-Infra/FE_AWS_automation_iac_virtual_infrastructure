@@ -1,8 +1,8 @@
 'use client'
 
-import { MessageCircle, X } from 'lucide-react'
-import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
+import { MessageCircle, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface Position {
   x: number
@@ -30,8 +30,6 @@ export function FloatingChatButton({ onToggle, isOpen }: FloatingChatButtonProps
   const snapToEdge = useCallback((x: number, y: number) => {
     const margin = 20
     const buttonSize = 60
-    const centerX = window.innerWidth / 2
-    const centerY = window.innerHeight / 2
 
     // Calculate distances to each edge
     const distToLeft = x

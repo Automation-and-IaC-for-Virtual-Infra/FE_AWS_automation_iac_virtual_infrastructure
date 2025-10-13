@@ -51,6 +51,7 @@ export default function Register() {
         toast.error(result.error)
       }
     } catch (error) {
+      console.log('🚀 ~ onSubmit ~ error:', error)
       toast.error('An unexpected error occurred')
     } finally {
       setIsLoading(false)

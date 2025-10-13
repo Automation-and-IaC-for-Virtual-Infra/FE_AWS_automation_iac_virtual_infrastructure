@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(request: NextRequest) {
   try {
     const { message } = await request.json()
+    console.log('🚀 ~ POST ~ message:', message)
     await new Promise((resolve) => setTimeout(resolve, 5000))
 
     // TODO: Call your AI service (OpenAI, Claude, etc.)
