@@ -1,8 +1,7 @@
-// app/components/Header.tsx
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -15,6 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cx } from 'class-variance-authority'
 import { ROUTES } from '@/constants/route'
+import { logoutAction } from '@/features/auth/lib/actions'
 
 const navItems = [
   { name: 'Dashboard', href: ROUTES.DASHBOARD },
@@ -23,7 +23,15 @@ const navItems = [
 ]
 
 export default function Header() {
+  const router = useRouter()
   const pathname = usePathname()
+
+  const handleSignOut = async () => {
+    const res = await logoutAction()
+    if (res.success) {
+      router.push(ROUTES.LOGIN)
+    }
+  }
 
   return (
     <header className="w-full bg-white px-6 py-3 flex items-center justify-between border-b shadow-md h-16">
@@ -70,7 +78,9 @@ export default function Header() {
               <Link href="/profile">Profile</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-500 cursor-pointer">Sign out</DropdownMenuItem>
+            <DropdownMenuItem className="text-red-500 cursor-pointer" onClick={handleSignOut}>
+              Sign out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
