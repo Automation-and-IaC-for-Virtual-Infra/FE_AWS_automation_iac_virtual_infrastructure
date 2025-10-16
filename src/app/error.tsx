@@ -29,18 +29,20 @@ export default function Error({
           </div>
         )}
 
-        <button
-          onClick={reset}
-          className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-        >
-          Try Again
-        </button>
-        <Link
-          href="/"
-          className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-gray-700 transition-colors hover:bg-gray-50"
-        >
-          Go to Home
-        </Link>
+        <div className="flex flex-col gap-2 size-full">
+          <button
+            onClick={reset}
+            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+          <Link
+            href="/"
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-gray-700 transition-colors hover:bg-gray-50 h-10"
+          >
+            Go to Home
+          </Link>
+        </div>
       </div>
     </div>
   )
