@@ -7,7 +7,7 @@ export const ROUTES = {
   CONFIRM_REGISTRATION: '/confirm-registration',
   DASHBOARD: '/',
   NOTIFICATIONS: '/notifications',
-  AWS_CONNECT: '/aws-connect',
+  AWS_VERIFICATION: '/aws-verification',
   INFRASTRUCTURE: '/infrastructure',
   INFRASTRUCTURE_SETUP: '/infrastructure/setup',
   ACCOUNT_SETTINGS: '/account/settings',
