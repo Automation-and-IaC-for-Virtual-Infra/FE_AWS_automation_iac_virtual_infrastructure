@@ -148,7 +148,7 @@ export function FloatingChatButton({ onToggle, isOpen }: FloatingChatButtonProps
       onMouseDown={handleMouseDown}
       onClick={handleClick}
       className={cn(
-        'fixed z-50 w-14 h-14 rounded-full shadow-lg',
+        'fixed z-30 w-14 h-14 rounded-full shadow-lg',
         'bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-xl',
         'flex items-center justify-center text-white',
         'touch-none select-none', // Prevent text selection and touch scrolling

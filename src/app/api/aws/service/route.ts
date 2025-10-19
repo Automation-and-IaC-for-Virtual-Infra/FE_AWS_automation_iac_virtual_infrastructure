@@ -8,7 +8,6 @@ export async function GET() {
   try {
     const res = await fetch(AWS_CLOUD_FORMATION_URL, {
       next: { revalidate: 86400 * 7 }, // Revalidate once a week
-      cache: 'no-store',
       signal: AbortSignal.timeout(10000), // 10 seconds timeout
       headers: { 'Content-Type': 'application/json' },
     })
@@ -36,11 +35,13 @@ export async function GET() {
     })
 
     return NextResponse.json({
-      count: updatedAwsServiceData.length,
-      services: updatedAwsServiceData,
+      success: true,
+      message: 'Fetched AWS services successfully',
+      data: {
+        count: updatedAwsServiceData.length,
+        services: updatedAwsServiceData,
+      },
     })
-
-    // return NextResponse.json({ count: awsServiceData.length, services: awsServiceData })
   } catch (error) {
     console.error(error)
     return NextResponse.json({ error: 'Failed to fetch AWS services' }, { status: 500 })

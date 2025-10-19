@@ -18,7 +18,7 @@ export default function Error({
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
         <div className="mb-6 text-center">
-          <h1 className="mb-2 text-6xl font-bold text-red-500">⚠️</h1>
+          <h1 className="mb-10 text-6xl font-bold text-red-500">⚠️</h1>
           <h2 className="mb-2 text-2xl font-bold text-gray-800">Oops! Something went wrong</h2>
           <p className="text-gray-600">We encountered an unexpected error. Please try again.</p>
         </div>
