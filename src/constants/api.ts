@@ -1,5 +1,9 @@
 /* ==================== AWS APIs ==================== */
 
+export const MOCK_API = {
+  NOTIFICATIONS: '/api/notifications',
+}
+
 export const AWS_API = {
   GET_AWS_SERVICES: '/api/aws/service',
   GET_AWS_VERIFICATION: '/api/aws/verification',
