@@ -47,6 +47,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
   const [nodes, setNodes, onNodesChange] = useNodesState<AwsService>(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
 
+  const [isFirstLoad, setIsFirstLoad] = useState(true)
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
   const [selectedNode, setSelectedNode] = useState<Node<AwsService> | null>(null)
   const [searchValue, setSearchValue] = useState('')
@@ -422,6 +423,21 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
 
   return (
     <>
+      <FloatingChatButton isOpen={isOpen} onToggle={() => setIsOpen(!isOpen)} />
+      <ChatBotModal
+        isOpen={isOpen}
+        onClose={() => {
+          if (isFirstLoad) {
+            setIsFirstLoad(false)
+          }
+
+          setIsOpen(false)
+        }}
+        onSendMessage={handleChatMessage}
+        onApplySuggestion={handleApplySuggestion}
+        fullWidth={isFirstLoad}
+      />
+
       <div className="flex text-black h-[calc(100vh-64px)] overflow-hidden">
         {/* Sidebar */}
         <div className="flex flex-col gap-2 min-w-64 bg-gray-100 p-3 border-r">
@@ -548,14 +564,6 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
           </div>
         )}
       </div>
-
-      <FloatingChatButton isOpen={isOpen} onToggle={() => setIsOpen(!isOpen)} />
-      <ChatBotModal
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        onSendMessage={handleChatMessage}
-        onApplySuggestion={handleApplySuggestion}
-      />
     </>
   )
 }
