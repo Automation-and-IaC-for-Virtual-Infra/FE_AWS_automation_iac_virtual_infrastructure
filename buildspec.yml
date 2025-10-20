@@ -1,19 +1,43 @@
-version: 0.1
+version: 0.2
+
+env:
+  secrets-manager:
+    SSH_KEY: 'fe-ec2-ssh-key'
 
 phases:
   install:
+    runtime-versions:
+      nodejs: 22
     commands:
       - echo "Installing dependencies..."
-      - npm install
+      - npm ci
+      - apt-get update -y
+      - apt-get install -y zip openssh-client
+
   build:
     commands:
-      - echo "Building Next.js app..."
+      - echo "Building Next.js project..."
       - npm run build
-      - npm run export || echo "No export needed"
+      - zip -r build.zip .next package.json node_modules public next.config.js
+      - echo "✅ Build complete"
+
   post_build:
     commands:
-      - echo "Zipping build output..."
-      - zip -r build.zip .next package.json node_modules public next.config.js
+      - echo "Deploying to EC2..."
+      - mkdir -p ~/.ssh
+      - echo "$SSH_KEY" > ~/.ssh/home-keypair.pem
+      - chmod 600 ~/.ssh/home-keypair.pem
+      - echo "SSH key loaded, testing connection..."
+      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@13.250.14.77 "echo '✅ SSH Connected successfully'"
+      - scp -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no build.zip ubuntu@13.250.14.77:/home/ubuntu/
+      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@13.250.14.77 "
+        cd /home/ubuntu &&
+        unzip -o build.zip &&
+        npm install --production &&
+        pm2 restart all || pm2 start npm --name nextjs -- start
+        "
+      - echo "✅ Deployment finished"
+
 artifacts:
   files:
     - build.zip
