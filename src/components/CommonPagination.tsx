@@ -39,7 +39,7 @@ export default function CommonPagination({ total, page, limit }: CommonPaginatio
     <div className="flex items-center justify-between">
       <Pagination>
         <PaginationContent>
-          <PaginationItem>
+          <PaginationItem className="cursor-pointer">
             <PaginationPrevious
               onClick={() => page > 1 && handlePageChange(page - 1)}
               className={page <= 1 ? 'pointer-events-none opacity-50' : ''}
@@ -47,14 +47,14 @@ export default function CommonPagination({ total, page, limit }: CommonPaginatio
           </PaginationItem>
 
           {Array.from({ length: totalPages }, (_, i) => (
-            <PaginationItem key={i}>
+            <PaginationItem key={i} className="cursor-pointer">
               <PaginationLink isActive={page === i + 1} onClick={() => handlePageChange(i + 1)}>
                 {i + 1}
               </PaginationLink>
             </PaginationItem>
           ))}
 
-          <PaginationItem>
+          <PaginationItem className="cursor-pointer">
             <PaginationNext
               onClick={() => page < totalPages && handlePageChange(page + 1)}
               className={page >= totalPages ? 'pointer-events-none opacity-50' : ''}

@@ -2,6 +2,7 @@
 
 export const MOCK_API = {
   NOTIFICATIONS: '/api/notifications',
+  AWS_NOTIFICATIONS: '/api/notifications/aws',
 }
 
 export const AWS_API = {
