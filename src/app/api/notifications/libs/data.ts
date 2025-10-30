@@ -12,7 +12,7 @@ export const mockNotifications = Array.from({ length: 36 }).map((_, i) => ({
 export const mockNotifications2: AwsNotification2[] = [
   // --- 50 CodeBuild notifications ---
   ...Array.from({ length: 50 }, (_, i) => {
-    const statuses = ['SUCCEEDED', 'FAILED', 'IN_PROGRESS', 'STOPPED']
+    const statuses = ['SUCCEEDED', 'FAILED', 'IN_PROGRESS', 'STOPPED'] as const
     const status = statuses[Math.floor(Math.random() * statuses.length)]
     return {
       id: `evt-cb-${i + 1}`,
@@ -35,7 +35,7 @@ export const mockNotifications2: AwsNotification2[] = [
 
   // --- 50 CodePipeline notifications ---
   ...Array.from({ length: 50 }, (_, i) => {
-    const statuses = ['SUCCEEDED', 'FAILED', 'IN_PROGRESS', 'STOPPED', 'CANCELED']
+    const statuses = ['SUCCEEDED', 'FAILED', 'IN_PROGRESS', 'STOPPED', 'CANCELED'] as const
     const status = statuses[Math.floor(Math.random() * statuses.length)]
     return {
       id: `evt-cp-${i + 1}`,

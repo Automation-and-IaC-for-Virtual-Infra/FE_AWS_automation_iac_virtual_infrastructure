@@ -1,7 +1,6 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,10 +10,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { cx } from 'class-variance-authority'
 import { ROUTES } from '@/constants/route'
 import { logoutAction } from '@/features/auth/lib/actions'
+import { cx } from 'class-variance-authority'
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
+import { ThemeSwitch } from './ThemeSwitch'
 
 const navItems = [
   { name: 'Dashboard', href: ROUTES.DASHBOARD },
@@ -59,6 +60,8 @@ export default function Header() {
 
       {/* User info */}
       <div className="flex items-center gap-4">
+        <ThemeSwitch />
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
