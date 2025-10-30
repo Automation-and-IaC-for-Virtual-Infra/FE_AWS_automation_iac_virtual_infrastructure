@@ -1,6 +1,11 @@
 'use client'
 
-import { NOTIFICATION_TYPES, NotificationData, NotificationSearchParams } from './libs/types'
+import {
+  AWS_NOTIFICATION_STATUSES,
+  AWS_SERVICE_NAMES,
+  AwsNotification2,
+  NotificationSearchParams,
+} from './libs/types'
 
 import CommonPagination from '@/components/CommonPagination'
 import LoadingContent from '@/components/LoadingContent'
@@ -22,20 +27,25 @@ export default function Notifications({
   result,
   params,
 }: {
-  result: PaginatedResponse<NotificationData[]>
+  result: PaginatedResponse<AwsNotification2[]>
   params: NotificationSearchParams
 }) {
   const router = useRouter()
 
-  const { type } = params
+  const { status = ALL_VALUE, service = ALL_VALUE } = params
   const { data = [], pagination } = result
   const { page = 1, total = 0, limit = 20 } = pagination || {}
 
   const [loading, setLoading] = useState(false)
 
-  const handleSelectChange = (value: string) => {
+  const handleStatusChange = (value: string) => {
     setLoading(true)
-    router.push(`${ROUTES.NOTIFICATIONS}/?type=${value}`)
+    router.push(`${ROUTES.NOTIFICATIONS}/?status=${value}&service=${service}`)
+  }
+
+  const handleServiceChange = (value: string) => {
+    setLoading(true)
+    router.push(`${ROUTES.NOTIFICATIONS}/?status=${status}&service=${value}`)
   }
 
   useEffect(() => {
@@ -51,32 +61,57 @@ export default function Notifications({
             Notifications
           </h1>
 
-          <CommonPagination total={total} page={page} limit={limit} />
+          <div className="flex items-center gap-4">
+            {/* Filter by Status */}
+            <Select onValueChange={handleStatusChange} value={status}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_VALUE}>All Statuses</SelectItem>
+                {AWS_NOTIFICATION_STATUSES.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select onValueChange={handleSelectChange} value={type || ALL_VALUE}>
-            <SelectTrigger className="w-[220px]">
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              {NOTIFICATION_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {/* Filter by Service */}
+            <Select onValueChange={handleServiceChange} value={service}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by Service" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_VALUE}>All Services</SelectItem>
+                {AWS_SERVICE_NAMES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Notification List */}
-        <div className="grid gap-4">
-          {data.length === 0 ? (
-            <p className="text-center text-gray-500 italic py-10">No notifications found.</p>
-          ) : (
-            data.map((item) => <NotificationItem key={item.id} item={item} />)
-          )}
+        <div className="flex justify-center">
+          <div className="w-[800px] flex flex-col gap-2">
+            <div className="flex justify-center">
+              <CommonPagination total={total} page={page} limit={limit} />
+            </div>
+            <div className="grid gap-4 w-[800px]">
+              {data.length === 0 ? (
+                <p className="text-center text-gray-500 italic py-10">No notifications found.</p>
+              ) : (
+                data.map((item) => <NotificationItem key={item.id} item={item} />)
+              )}
+            </div>
+            <div className="flex justify-center">
+              <CommonPagination total={total} page={page} limit={limit} />
+            </div>
+          </div>
         </div>
-
-        <CommonPagination total={total} page={page} limit={limit} />
       </div>
     </LoadingContent>
   )

@@ -10,3 +10,12 @@ export const fetchNotifications = async (searchParams: NotificationSearchParams)
 
   return res
 }
+
+export const fetchAwsNotifications = async (searchParams: NotificationSearchParams) => {
+  const res = await apiRequest({
+    path: MOCK_API.AWS_NOTIFICATIONS,
+    searchParams,
+  })
+
+  return res
+}
