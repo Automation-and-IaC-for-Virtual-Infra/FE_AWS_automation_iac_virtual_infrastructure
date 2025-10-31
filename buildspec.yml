@@ -9,34 +9,54 @@ phases:
     runtime-versions:
       nodejs: 24
     commands:
-      - echo "Installing dependencies..."
+      - echo "📦 Installing dependencies..."
       - npm ci
       - apt-get update -y
       - apt-get install -y zip openssh-client
 
   build:
     commands:
-      - echo "Building Next.js project..."
+      - echo "🏗️ Building Next.js project (with .env)..."
+      - ls -al
+      - if [ ! -f .env ]; then echo "⚠️ No .env file found!"; fi
       - npm run build
-      - zip -r build.zip .next package.json node_modules public next.config.js
       - echo "✅ Build complete"
+
+      - echo "📦 Zipping full project for deployment..."
+      - zip -r build.zip . -x "*.git*" "node_modules/*" "build.zip"
 
   post_build:
     commands:
-      - echo "Deploying to EC2..."
+      - echo "🚀 Deploying to EC2..."
       - mkdir -p ~/.ssh
       - echo "$SSH_KEY" > ~/.ssh/home-keypair.pem
       - chmod 600 ~/.ssh/home-keypair.pem
-      - echo "SSH key loaded, testing connection..."
-      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@13.250.14.77 "echo '✅ SSH Connected successfully'"
-      - scp -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no build.zip ubuntu@13.250.14.77:/home/ubuntu/
-      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@13.250.14.77 "
-        cd /home/ubuntu &&
-        unzip -o build.zip &&
-        npm install --production &&
-        pm2 restart all || pm2 start npm --name nextjs -- start
+
+      - echo "🔑 Testing SSH connection..."
+      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "echo '✅ Connected to EC2'"
+
+      - echo "📤 Uploading project to EC2..."
+      - scp -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no build.zip ubuntu@54.169.171.227:/home/ubuntu/frontend
+
+      - echo "🧩 Extracting & building on EC2..."
+      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "
+        set -e
+        echo '📂 Switching to /home/ubuntu/frontend'
+        cd /home/ubuntu/frontend
+        echo '🧹 Cleaning old files...'
+        rm -rf .next node_modules package-lock.json || true
+        unzip -o build.zip
+        echo '📦 Installing dependencies...'
+        npm ci --omit=dev
+        echo '🏗️ Rebuilding Next.js project on EC2...'
+        npm run build
+        echo '🚀 Starting app with PM2...'
+        pm2 delete frontend || true
+        pm2 start npm --name frontend -- run start -- -H 0.0.0.0
+        pm2 save
         "
-      - echo "✅ Deployment finished"
+
+      - echo "✅ Deployment completed successfully!"
 
 artifacts:
   files:
