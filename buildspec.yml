@@ -9,33 +9,44 @@ phases:
     runtime-versions:
       nodejs: 24
     commands:
-      - echo "Installing dependencies..."
+      - echo "📦 Installing dependencies..."
       - npm ci
       - apt-get update -y
       - apt-get install -y zip openssh-client
 
   build:
     commands:
-      - echo "Building Next.js project..."
+      - echo "🏗️ Building Next.js project..."
       - npm run build
-      - zip -r build.zip .next package.json node_modules public next.config.js
+      # chỉ zip file cần thiết
+      - zip -r build.zip .next package.json next.config.js public
       - echo "✅ Build complete"
 
   post_build:
     commands:
-      - echo "Deploying to EC2..."
+      - echo "🚀 Deploying to EC2..."
       - mkdir -p ~/.ssh
       - echo "$SSH_KEY" > ~/.ssh/home-keypair.pem
       - chmod 600 ~/.ssh/home-keypair.pem
-      - echo "SSH key loaded, testing connection..."
-      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@13.250.14.77 "echo '✅ SSH Connected successfully'"
-      - scp -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no build.zip ubuntu@13.250.14.77:/home/ubuntu/
-      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@13.250.14.77 "
-        cd /home/ubuntu &&
+
+      - echo "🔑 SSH key loaded, testing connection..."
+      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "echo '✅ SSH Connected successfully'"
+
+      - echo "📦 Uploading build to EC2..."
+      - scp -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no build.zip ubuntu@54.169.171.227:/home/ubuntu/frontend
+
+      - echo "🧩 Extracting and deploying on EC2..."
+      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "
+        sudo apt-get update -y &&
+        sudo apt-get install -y unzip nodejs npm &&
+        sudo npm install -g pm2 &&
+        cd /home/ubuntu/frontend &&
         unzip -o build.zip &&
-        npm install --production &&
-        pm2 restart all || pm2 start npm --name nextjs -- start
+        npm ci --omit=dev &&
+        pm2 delete nextjs || true &&
+        pm2 start npm --name nextjs -- run start -- -H 0.0.0.0
         "
+
       - echo "✅ Deployment finished"
 
 artifacts:
