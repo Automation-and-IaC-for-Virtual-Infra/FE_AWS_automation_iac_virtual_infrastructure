@@ -5,4 +5,6 @@ export const ENV = {
   COGNITO_USER_POOL_ID: process.env.COGNITO_USER_POOL_ID || '',
   COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID || '',
   COGNITO_CLIENT_SECRET: process.env.COGNITO_CLIENT_SECRET || '',
+  METRIC_ACCESS_KEY: process.env.METRIC_ACCESS_KEY || '',
+  METRIC_SECRET_KEY: process.env.METRIC_SECRET_KEY || '',
 }

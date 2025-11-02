@@ -320,7 +320,7 @@ export function ChatBotModal({
           {isLoading && (
             <div className="flex justify-start">
               <div className="bg-gray-100 rounded-lg p-3 flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin dark:text-gray-400" />
                 <span className="text-sm text-gray-600">Thinking...</span>
               </div>
             </div>
