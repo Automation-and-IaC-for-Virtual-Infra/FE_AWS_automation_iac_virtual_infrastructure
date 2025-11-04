@@ -21,6 +21,7 @@ const navItems = [
   { name: 'Dashboard', href: ROUTES.DASHBOARD },
   { name: 'Infrastructure', href: ROUTES.INFRASTRUCTURE },
   { name: 'Notifications', href: ROUTES.NOTIFICATIONS },
+  { name: 'Services', href: ROUTES.SERVICES },
 ]
 
 export default function Header() {

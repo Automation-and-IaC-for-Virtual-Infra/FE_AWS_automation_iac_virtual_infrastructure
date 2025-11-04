@@ -18,3 +18,16 @@ export interface ListAwsServicesData {
   count: number
   services: AwsService[]
 }
+
+// interface service from database
+export interface ServiceData {
+  id: number
+  name: string
+  public_ip: string
+  private_ip: string
+  service_id: string
+  status: number
+  additional_information: string
+  created_at: string
+  updated_at: string
+}

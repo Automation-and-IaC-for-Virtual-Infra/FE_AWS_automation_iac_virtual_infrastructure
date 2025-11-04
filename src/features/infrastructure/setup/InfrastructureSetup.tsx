@@ -41,6 +41,13 @@ const BORDER_NODE = {
   optional: '2px solid #22c55e',
 }
 
+const CONNECTION_COLORS = {
+  suggest: '#2563eb',
+  required: '#ef4444',
+  recommended: '#eab308',
+  optional: '#22c55e',
+}
+
 export default function InfrastructureSetup({ result }: { result: ListAwsServicesData }) {
   const { isOpen, setIsOpen, handleSendMessage } = useChatBot()
 
@@ -322,6 +329,20 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     return response // Return response to ChatBotModal
   }
 
+  const handleUnselectNode = () => {
+    setSelectedNode(null)
+    setNodes((nds) =>
+      nds.map((n) => ({
+        ...n,
+        style: {
+          ...n.style,
+          border: BORDER_NODE.default,
+          borderRadius: '8px',
+        },
+      }))
+    )
+  }
+
   const handleApplySuggestion = useCallback(
     (suggestion: any) => {
       if (!suggestion || !reactFlowInstance) return
@@ -357,7 +378,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
           })
         })
 
-        setNodes((nds) => [...nds, ...newNodes])
+        setNodes(newNodes)
 
         // Add connections as edges
         setTimeout(() => {
@@ -371,7 +392,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
                 source: sourceNode.id,
                 target: targetNode.id,
                 markerEnd: { type: MarkerType.ArrowClosed, width: 24, height: 24 },
-                style: { stroke: conn.type === 'required' ? '#ef4444' : '#2563eb' },
+                style: { stroke: CONNECTION_COLORS.suggest },
               })
             }
           })
@@ -524,9 +545,18 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
         {/* Config Panel */}
         {selectedNode && (
           <div className="w-76 bg-gray-50 border-l p-3 flex flex-col gap-2">
-            <h3 className="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {selectedNode.data.displayName}
-            </h3>{' '}
+            <div className="flex justify-between">
+              <h3 className="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {selectedNode.data.displayName}
+              </h3>
+              {/* close icon */}
+              <button
+                onClick={handleUnselectNode}
+                className="text-gray-500 flex items-center justify-center size-6 cursor-pointer hover:bg-gray-200 rounded-sm"
+              >
+                <span className="text-2xl -mt-1">&times;</span>
+              </button>
+            </div>
             <div className="mb-2">
               <PromptConfigBox />
             </div>
@@ -553,7 +583,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
                         <Input
                           value={value || ''}
                           onChange={(e) => handleConfigChange(cfgKey, e.target.value)}
-                          className="w-full"
+                          className="w-full border border-gray-400"
                         />
                       )}
                     </div>

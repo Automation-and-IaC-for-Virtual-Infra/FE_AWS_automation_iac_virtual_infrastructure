@@ -8,6 +8,7 @@ export const MOCK_API = {
 export const AWS_API = {
   GET_AWS_SERVICES: '/api/aws/service',
   GET_AWS_VERIFICATION: '/api/aws/verification',
+  GET_AWS_METRIC: '/api/aws/metric',
 }
 
 export const COMMON_API = {
