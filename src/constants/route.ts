@@ -12,5 +12,5 @@ export const ROUTES = {
   INFRASTRUCTURE_SETUP: '/infrastructure/setup',
   ACCOUNT_SETTINGS: '/account/settings',
   AWS_SERVICES: '/aws-services',
-  METRICS: '/metrics',
+  SERVICES: '/services',
 }

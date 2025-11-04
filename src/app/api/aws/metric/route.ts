@@ -18,7 +18,8 @@ export async function GET(req: Request) {
     },
   })
 
-  // ✅ Thêm metric khác ngoài CPU
+  const period = 86400 / 24 // 1 hour
+
   const MetricDataQueries = instanceIds.flatMap((id, idx) => [
     {
       Id: `cpu_${idx}`,
@@ -28,12 +29,11 @@ export async function GET(req: Request) {
           MetricName: 'CPUUtilization',
           Dimensions: [{ Name: 'InstanceId', Value: id }],
         },
-        Period: 86400,
+        Period: period,
         Stat: 'Average',
       },
-      // Period: 86400, // 1 day
-      Period: 86400 / 24, // 1 hour
-      Stat: 'Average',
+      Label: `${id}-CPUUtilization`,
+      ReturnData: true,
     },
     {
       Id: `network_in_${idx}`,
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
           MetricName: 'NetworkIn',
           Dimensions: [{ Name: 'InstanceId', Value: id }],
         },
-        Period: 86400,
+        Period: period,
         Stat: 'Sum',
       },
       Label: `${id}-NetworkIn`,
@@ -57,7 +57,7 @@ export async function GET(req: Request) {
           MetricName: 'NetworkOut',
           Dimensions: [{ Name: 'InstanceId', Value: id }],
         },
-        Period: 86400,
+        Period: period,
         Stat: 'Sum',
       },
       Label: `${id}-NetworkOut`,
@@ -71,7 +71,7 @@ export async function GET(req: Request) {
           MetricName: 'DiskReadBytes',
           Dimensions: [{ Name: 'InstanceId', Value: id }],
         },
-        Period: 86400,
+        Period: period,
         Stat: 'Sum',
       },
       Label: `${id}-DiskReadBytes`,
@@ -85,7 +85,7 @@ export async function GET(req: Request) {
           MetricName: 'DiskWriteBytes',
           Dimensions: [{ Name: 'InstanceId', Value: id }],
         },
-        Period: 86400,
+        Period: period,
         Stat: 'Sum',
       },
       Label: `${id}-DiskWriteBytes`,
@@ -99,7 +99,7 @@ export async function GET(req: Request) {
           MetricName: 'StatusCheckFailed',
           Dimensions: [{ Name: 'InstanceId', Value: id }],
         },
-        Period: 86400,
+        Period: period,
         Stat: 'Maximum',
       },
       Label: `${id}-Status`,
@@ -109,7 +109,6 @@ export async function GET(req: Request) {
 
   const command = new GetMetricDataCommand({
     MetricDataQueries,
-    // StartTime: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
     StartTime: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
     EndTime: new Date(),
   })
