@@ -31,8 +31,9 @@ export async function GET(req: Request) {
         Period: 86400,
         Stat: 'Average',
       },
-      Label: `${id}-CPU`,
-      ReturnData: true,
+      // Period: 86400, // 1 day
+      Period: 86400 / 24, // 1 hour
+      Stat: 'Average',
     },
     {
       Id: `network_in_${idx}`,
@@ -108,7 +109,8 @@ export async function GET(req: Request) {
 
   const command = new GetMetricDataCommand({
     MetricDataQueries,
-    StartTime: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    // StartTime: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    StartTime: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
     EndTime: new Date(),
   })
 
