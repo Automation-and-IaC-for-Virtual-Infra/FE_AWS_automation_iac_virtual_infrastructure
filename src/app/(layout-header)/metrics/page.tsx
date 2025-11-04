@@ -1,13 +1,29 @@
-import { fetchMetrics } from '@/features/aws/metrics/libs/fetchers'
+import { fetchMetrics, listService } from '@/features/aws/metrics/libs/fetchers'
 import Metrics from '@/features/aws/metrics/Metrics'
 
 export default async function MetricsPage() {
-  const mockInstanceIds = ['i-0bbaac4d3a7cdad2f', 'i-0878ffbb474e7cd77', 'i-07335c016331bad7a']
+  console.log('📌 MetricsPage start')
 
-  const res = await fetchMetrics(mockInstanceIds.join(','))
-  if (!res.success) {
+  // 1. call listService để lấy danh sách service
+  const serviceRes = await listService()
+
+  // 2. extract instanceId từ service
+  const instanceIds = serviceRes.services
+    .map((s: any) => s.service_id) // tùy theo response BE trả về, nếu key khác thì chỉnh
+    .filter(Boolean)
+
+  console.log(instanceIds, 'serviceRes')
+  if (!instanceIds.length) {
+    throw new Error('Không có instanceId hợp lệ trong danh sách service')
+  }
+
+  // 3. gọi metrics bằng instanceIds lấy được
+  const metricRes = await fetchMetrics(instanceIds.join(','))
+  console.log('📌 Metric response:', metricRes)
+
+  if (!metricRes.success) {
     throw new Error('Failed to fetch metrics')
   }
 
-  return <Metrics data={res.data} />
+  return <Metrics data={metricRes.data.MetricDataResults} />
 }

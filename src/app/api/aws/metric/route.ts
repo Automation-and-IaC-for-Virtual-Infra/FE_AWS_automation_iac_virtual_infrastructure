@@ -18,33 +18,103 @@ export async function GET(req: Request) {
     },
   })
 
-  const MetricDataQueries = instanceIds.map((id, idx) => ({
-    Id: `cpu_${idx}`,
-    MetricStat: {
-      Metric: {
-        Namespace: 'AWS/EC2',
-        MetricName: 'CPUUtilization',
-        Dimensions: [{ Name: 'InstanceId', Value: id }],
+  // ✅ Thêm metric khác ngoài CPU
+  const MetricDataQueries = instanceIds.flatMap((id, idx) => [
+    {
+      Id: `cpu_${idx}`,
+      MetricStat: {
+        Metric: {
+          Namespace: 'AWS/EC2',
+          MetricName: 'CPUUtilization',
+          Dimensions: [{ Name: 'InstanceId', Value: id }],
+        },
+        Period: 86400,
+        Stat: 'Average',
       },
-      Period: 86400, // 1 day
-      Stat: 'Average',
+      Label: `${id}-CPU`,
+      ReturnData: true,
     },
-    Label: id,
-    ReturnData: true,
-  }))
+    {
+      Id: `network_in_${idx}`,
+      MetricStat: {
+        Metric: {
+          Namespace: 'AWS/EC2',
+          MetricName: 'NetworkIn',
+          Dimensions: [{ Name: 'InstanceId', Value: id }],
+        },
+        Period: 86400,
+        Stat: 'Sum',
+      },
+      Label: `${id}-NetworkIn`,
+      ReturnData: true,
+    },
+    {
+      Id: `network_out_${idx}`,
+      MetricStat: {
+        Metric: {
+          Namespace: 'AWS/EC2',
+          MetricName: 'NetworkOut',
+          Dimensions: [{ Name: 'InstanceId', Value: id }],
+        },
+        Period: 86400,
+        Stat: 'Sum',
+      },
+      Label: `${id}-NetworkOut`,
+      ReturnData: true,
+    },
+    {
+      Id: `disk_read_${idx}`,
+      MetricStat: {
+        Metric: {
+          Namespace: 'AWS/EC2',
+          MetricName: 'DiskReadBytes',
+          Dimensions: [{ Name: 'InstanceId', Value: id }],
+        },
+        Period: 86400,
+        Stat: 'Sum',
+      },
+      Label: `${id}-DiskReadBytes`,
+      ReturnData: true,
+    },
+    {
+      Id: `disk_write_${idx}`,
+      MetricStat: {
+        Metric: {
+          Namespace: 'AWS/EC2',
+          MetricName: 'DiskWriteBytes',
+          Dimensions: [{ Name: 'InstanceId', Value: id }],
+        },
+        Period: 86400,
+        Stat: 'Sum',
+      },
+      Label: `${id}-DiskWriteBytes`,
+      ReturnData: true,
+    },
+    {
+      Id: `status_${idx}`,
+      MetricStat: {
+        Metric: {
+          Namespace: 'AWS/EC2',
+          MetricName: 'StatusCheckFailed',
+          Dimensions: [{ Name: 'InstanceId', Value: id }],
+        },
+        Period: 86400,
+        Stat: 'Maximum',
+      },
+      Label: `${id}-Status`,
+      ReturnData: true,
+    },
+  ])
 
   const command = new GetMetricDataCommand({
     MetricDataQueries,
-    StartTime: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    StartTime: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     EndTime: new Date(),
   })
 
   try {
     const response = await client.send(command)
-    return Response.json({
-      success: true,
-      data: response.MetricDataResults,
-    })
+    return Response.json({ success: true, data: response })
   } catch (error) {
     console.error('❌ Error fetching metrics:', error)
     return Response.json(
