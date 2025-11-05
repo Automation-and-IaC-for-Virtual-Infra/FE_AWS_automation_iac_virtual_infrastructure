@@ -1,6 +1,6 @@
 'use client'
 
-import { InfrastructureSpec } from '@/types/chat'
+import { InfraData } from '@/features/infrastructure/setup/libs/types'
 import { extractJsonObjects } from '@/utils/streaming'
 import { useCallback, useState } from 'react'
 
@@ -18,7 +18,7 @@ interface Message {
     missing_info: string[]
   }
   readyToGenerate?: boolean
-  generatedSpec?: InfrastructureSpec | null
+  generatedSpec?: InfraData | null
   suggestion?: any
 }
 
@@ -323,7 +323,7 @@ export function useInfrastructureChat() {
       let accumulatedThinking = ''
       let currentStatus = ''
       let currentStatusMessage = ''
-      let finalSpec: InfrastructureSpec | null = null
+      let finalSpec: InfraData | null = null
 
       while (true) {
         const { done, value } = await reader.read()
@@ -401,7 +401,7 @@ export function useInfrastructureChat() {
             case 'completed':
               // ✅ Handle completion with final spec
               if (parsed.spec) {
-                finalSpec = parsed.spec as InfrastructureSpec
+                finalSpec = parsed.spec as InfraData
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === aiMessageId
@@ -442,7 +442,7 @@ export function useInfrastructureChat() {
       // Final update if not already completed
       if (!finalSpec && accumulatedContent) {
         try {
-          finalSpec = JSON.parse(accumulatedContent) as InfrastructureSpec
+          finalSpec = JSON.parse(accumulatedContent) as InfraData
         } catch (e) {
           console.warn('Could not parse final spec from content', e)
         }

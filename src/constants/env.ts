@@ -13,4 +13,6 @@ export const ENV = {
 
   METRIC_ACCESS_KEY: process.env.METRIC_ACCESS_KEY || '',
   METRIC_SECRET_KEY: process.env.METRIC_SECRET_KEY || '',
+
+  GITHUB_PAT: process.env.GITHUB_PAT || '',
 }

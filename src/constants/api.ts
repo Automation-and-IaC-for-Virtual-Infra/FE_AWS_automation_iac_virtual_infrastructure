@@ -14,8 +14,10 @@ export const AWS_API = {
 export const COMMON_API = {
   CHAT: '/chat',
   GENERATE_SPEC: '/generate_spec',
+  APPLY_SPEC: '/apply_spec',
   GEN_TF: '/gen_tf',
+  GET_TF: '/get_tf',
   FIX_TF: '/fix_tf',
-  APPLY: '/apply',
+  GIT_PUSH: '/git_push',
   LIST_SERVICES: '/list_services',
 }

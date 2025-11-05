@@ -30,10 +30,7 @@ export const extractJsonObjects = (text: string): StreamMessage[] => {
     try {
       const parsed = JSON.parse(jsonStr) as StreamMessage
       results.push(parsed)
-    } catch (error) {
-      console.warn('Failed to parse JSON:', jsonStr.substring(0, 100))
-      console.error('Error details:', error)
-    }
+    } catch (error) {}
   }
 
   return results

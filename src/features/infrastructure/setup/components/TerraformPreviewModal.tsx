@@ -2,37 +2,106 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import Editor from '@monaco-editor/react'
 import { DialogTitle } from '@radix-ui/react-dialog'
+import { Github, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { handlePushToRepository } from '../libs/actions'
 
 interface TerraformFile {
-  name: string
-  content: string
+  file_name: string
+  file_content: string
 }
 
 export function PreviewTerraformModal({
   open,
   onClose,
+  sessionId,
   files = [],
   loading = false,
 }: {
   open: boolean
   onClose: () => void
+  sessionId: string
   files: TerraformFile[]
   loading?: boolean
 }) {
   const [selectedFile, setSelectedFile] = useState<TerraformFile | null>(null)
   const [code, setCode] = useState<string | null>(null)
 
-  const handleApply = () => {
-    console.log('Applying Terraform configuration...')
+  const handleFormatCode = () => {
+    if (!code) return
+
+    // HCL/Terraform formatting rules
+    const formatted = code
+      .split('\n')
+      .map((line) => line.trimEnd()) // Remove trailing whitespace
+      .join('\n')
+
+    // Add proper indentation
+    let indent = 0
+    const lines: string[] = []
+
+    formatted.split('\n').forEach((line) => {
+      const trimmed = line.trim()
+
+      // Skip empty lines
+      if (!trimmed) {
+        lines.push('')
+        return
+      }
+
+      // Decrease indent before closing braces
+      if (trimmed.startsWith('}')) {
+        indent = Math.max(0, indent - 1)
+      }
+
+      // Add indented line
+      const indented = '  '.repeat(indent) + trimmed
+
+      // Increase indent after opening braces
+      if (trimmed.endsWith('{')) {
+        indent++
+      }
+
+      lines.push(indented)
+    })
+
+    // Format = signs alignment (optional)
+    const formattedCode = lines
+      .map((line) => {
+        // Align = in resource blocks
+        if (line.includes('=') && !line.trim().startsWith('#')) {
+          const [key, ...rest] = line.split('=')
+          const value = rest.join('=').trim()
+          const indent = line.match(/^\s*/)?.[0] || ''
+          return `${indent}${key.trim()} = ${value}`
+        }
+        return line
+      })
+      .join('\n')
+
+    setCode(formattedCode)
+
+    // Update selected file
+    if (selectedFile) {
+      setSelectedFile({
+        ...selectedFile,
+        file_content: formattedCode,
+      })
+    }
+  }
+
+  const onPushToRepo = async () => {
+    console.log('Pushing Terraform configuration to repository...')
+    const res = await handlePushToRepository(sessionId)
+    console.log('🚀 ~ onPushToRepo ~ res:', res)
   }
 
   const handleDownload = () => {
     if (!selectedFile) return
     const element = document.createElement('a')
-    const file = new Blob([selectedFile.content], { type: 'text/plain' })
+    const file = new Blob([selectedFile.file_content], { type: 'text/plain' })
     element.href = URL.createObjectURL(file)
-    element.download = selectedFile.name
+    element.download = selectedFile.file_name
     document.body.appendChild(element)
     element.click()
   }
@@ -40,7 +109,7 @@ export function PreviewTerraformModal({
   useEffect(() => {
     if (files.length > 0) {
       setSelectedFile(files[0])
-      setCode(files[0].content)
+      setCode(files[0].file_content)
     }
   }, [files])
 
@@ -48,7 +117,7 @@ export function PreviewTerraformModal({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogTitle> </DialogTitle>
       <DialogContent className="w-screen h-screen p-0 !max-w-screen [&_button:has(svg.lucide-x)]:hidden">
-        {loading && files.length === 0 ? (
+        {loading ? (
           <div className="flex items-center justify-center h-full">
             <span>Loading...</span>
           </div>
@@ -60,18 +129,18 @@ export function PreviewTerraformModal({
               <ul className="space-y-2">
                 {files.map((file) => (
                   <li
-                    key={file.name}
+                    key={file.file_name}
                     className={`cursor-pointer rounded px-2 py-1 ${
-                      selectedFile?.name === file.name
+                      selectedFile?.file_name === file.file_name
                         ? 'bg-primary text-primary-foreground'
                         : 'hover:bg-accent'
                     }`}
                     onClick={() => {
                       setSelectedFile(file)
-                      setCode(file.content)
+                      setCode(file.file_content)
                     }}
                   >
-                    {file.name}
+                    {file.file_name}
                   </li>
                 ))}
               </ul>
@@ -80,13 +149,18 @@ export function PreviewTerraformModal({
             {/* Monaco Editor */}
             <div className="flex-1 flex flex-col">
               <div className="flex justify-between items-center p-2 border-b bg-background">
-                <div className="text-sm font-medium">{selectedFile?.name}</div>
-                <div className="space-x-2">
+                <div className="text-sm font-medium">{selectedFile?.file_name}</div>
+                <div className="space-x-2 flex items-center">
+                  <Button size="sm" variant="outline" onClick={handleFormatCode}>
+                    <Sparkles />
+                    Format Code
+                  </Button>
                   <Button size="sm" variant="outline" onClick={handleDownload}>
                     Download
                   </Button>
-                  <Button size="sm" className="bg-green-600 text-white" onClick={handleApply}>
-                    Apply
+                  <Button size="sm" className="bg-green-600 text-white" onClick={onPushToRepo}>
+                    <Github />
+                    Push to Repository
                   </Button>
                   <Button size="sm" variant="ghost" onClick={onClose}>
                     Close

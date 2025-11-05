@@ -19,6 +19,7 @@ import ReactFlow, {
   MarkerType,
   MiniMap,
   Node,
+  NodeTypes,
   ReactFlowInstance,
   addEdge,
   useEdgesState,
@@ -28,35 +29,9 @@ import 'reactflow/dist/style.css'
 import { toast } from 'sonner'
 import { GenerateInfra } from './components/GenerateInfra'
 import { PreviewTerraformModal } from './components/TerraformPreviewModal'
-
-// TODO: remove it
-const MOCK_FILES = [
-  {
-    filename: 'main.tf',
-    content:
-      'provider "aws" {\n  region = "ap-southeast-1"\n}\n\nmodule "vpc" {\n  source = "./modules/vpc"\n  cidr_block = "10.0.0.0/16"\n}\n\nmodule "ec2" {\n  source = "./modules/ec2"\n  instance_type = "t3.micro"\n  ami = "ami-0abcdef1234567890"\n  subnet_id = module.vpc.public_subnet_id\n  key_name = "my-key"\n}',
-  },
-  {
-    filename: 'variables.tf',
-    content:
-      'variable "region" {\n  description = "AWS region"\n  type = string\n  default = "ap-southeast-1"\n}\n\nvariable "instance_type" {\n  description = "EC2 instance type"\n  type = string\n  default = "t3.micro"\n}',
-  },
-  {
-    filename: 'outputs.tf',
-    content:
-      'output "instance_public_ip" {\n  description = "Public IP of the EC2 instance"\n  value = module.ec2.public_ip\n}\n\noutput "vpc_id" {\n  description = "ID of created VPC"\n  value = module.vpc.vpc_id\n}',
-  },
-  {
-    filename: 'modules/vpc/main.tf',
-    content:
-      'resource "aws_vpc" "this" {\n  cidr_block = var.cidr_block\n  enable_dns_support = true\n  enable_dns_hostnames = true\n  tags = { Name = "${terraform.workspace}-vpc" }\n}\n\nresource "aws_subnet" "public" {\n  vpc_id = aws_vpc.this.id\n  cidr_block = "10.0.1.0/24"\n  map_public_ip_on_launch = true\n  availability_zone = "ap-southeast-1a"\n  tags = { Name = "${terraform.workspace}-public-subnet" }\n}\n\noutput "public_subnet_id" {\n  value = aws_subnet.public.id\n}',
-  },
-  {
-    filename: 'modules/ec2/main.tf',
-    content:
-      'resource "aws_instance" "this" {\n  ami = var.ami\n  instance_type = var.instance_type\n  subnet_id = var.subnet_id\n  key_name = var.key_name\n  tags = {\n    Name = "${terraform.workspace}-instance"\n  }\n}\n\noutput "public_ip" {\n  value = aws_instance.this.public_ip\n}',
-  },
-]
+import { handleApplySpec, handleGenTerraform } from './libs/actions'
+import { getTerraformBySessionId } from './libs/fetchers'
+import { mappingReactFlowToInfraData } from './libs/utils'
 
 const initialNodes: Node[] = []
 const initialEdges: Edge[] = []
@@ -76,6 +51,8 @@ const CONNECTION_COLORS = {
   optional: '#22c55e',
 }
 
+const nodeTypes: NodeTypes = {}
+
 export default function InfrastructureSetup({ result }: { result: ListAwsServicesData }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<AwsService>(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
@@ -93,8 +70,11 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
   })
 
   const [isLoading, setIsLoading] = useState(false)
+  const [sessionId, setSessionId] = useState<string>('')
   const [showModalTerraform, setShowModalTerraform] = useState(false)
-  const [terraformFiles, setTerraformFiles] = useState<{ name: string; content: string }[]>([])
+  const [terraformFiles, setTerraformFiles] = useState<
+    { file_name: string; file_content: string }[]
+  >([])
 
   const filteredServices = useMemo(() => {
     if (!searchValue) return result.services
@@ -275,8 +255,8 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
         type: 'default',
         position,
         data: {
-          label: service.displayName,
           ...service,
+          label: service.displayName,
         },
         style: {
           border: BORDER_NODE.selected,
@@ -348,22 +328,25 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     setSelectedNode(updatedNodes[nodeIndex])
   }
 
-  const exportConfig = async () => {
+  const generateTerraform = async () => {
     const payload = { nodes, edges }
-    console.log('Send to BE:', payload)
-    setIsLoading(true)
-    setShowModalTerraform(true)
+    const res = await handleApplySpec(sessionId, mappingReactFlowToInfraData(payload))
+    if (res.status === 'ok') {
+      const resGenTf = await handleGenTerraform(sessionId)
+      if (resGenTf?.success) {
+        toast.success('Terraform files generated successfully!')
+        setIsLoading(true)
+        setShowModalTerraform(true)
 
-    // TODO: call API generate terraform files
-    await new Promise((resolve) => setTimeout(resolve, 5000)) // simulate delay
+        const resGetTf = await getTerraformBySessionId(sessionId)
+        setTerraformFiles(resGetTf.files || [])
+        if (resGetTf.message) {
+          toast.success(resGetTf.message)
+        }
 
-    setIsLoading(false)
-    setTerraformFiles(
-      MOCK_FILES.map((file) => ({
-        name: file.filename,
-        content: file.content,
-      }))
-    )
+        setIsLoading(false)
+      }
+    }
   }
 
   const handleUnselectNode = () => {
@@ -381,87 +364,71 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
   }
 
   const handleApplySuggestion = useCallback(
-    (suggestion: any) => {
-      if (!suggestion || !reactFlowInstance) return
+    (
+      { nodes: incomingNodes, edges: incomingEdges }: { nodes: Node[]; edges: Edge[] },
+      session_id: string
+    ) => {
+      if (!session_id || !incomingNodes || !reactFlowInstance) return
+
+      setSessionId(session_id)
 
       try {
-        const newNodes: Node[] = []
-        const newEdges: Edge[] = []
+        // Map incoming nodes with full service data from result.services
+        const mappedNodes = incomingNodes.map((node) => {
+          const service = result.services.find((s) => s.resourceType === node.data?.resourceType)
 
-        // Add services as nodes
-        suggestion.services?.forEach((serviceId: string, index: number) => {
-          const service = result.services.find((s) => s.id === serviceId)
-          if (!service) return
+          if (!service) {
+            console.warn(`Service not found for node:`, node)
+            return node
+          }
 
-          const position = reactFlowInstance.project({
-            x: 100 + (index % 3) * 250,
-            y: 100 + Math.floor(index / 3) * 150,
-          })
-
-          const nodeId = `${Date.now()}-${serviceId}-${index}`
-          newNodes.push({
-            id: nodeId,
+          return {
+            ...node,
             type: 'default',
-            position,
             data: {
-              label: service.displayName,
               ...service,
-              _generatedId: serviceId, // Track original service ID
+              ...node.data,
+              label: service.displayName,
+              displayName: service.displayName,
+              requiredProps: service.requiredProps || [],
+              connections: service.connections || {
+                requiredConnections: [],
+                recommendedConnections: [],
+                optionalConnections: [],
+              },
+              // Merge properties from service and incoming node
+              properties: {
+                ...service.properties,
+                ...node.data?.properties,
+              },
             },
             style: {
+              ...node.style,
               border: BORDER_NODE.default,
               borderRadius: '8px',
             },
-          })
+          }
         })
 
-        setNodes(newNodes)
+        // Map edges with proper styling
+        const mappedEdges = incomingEdges.map((edge) => ({
+          ...edge,
+          markerEnd: { type: MarkerType.ArrowClosed, width: 24, height: 24 },
+          style: {
+            ...edge.style,
+            stroke: CONNECTION_COLORS.suggest,
+          },
+        }))
 
-        // Add connections as edges
+        setNodes(mappedNodes)
+        setEdges(mappedEdges)
+
+        toast.success('Infrastructure applied successfully!')
+
+        // Fit view to show all nodes
         setTimeout(() => {
-          suggestion.connections?.forEach((conn: any) => {
-            const sourceNode = newNodes.find((n) => n.data._generatedId === conn.source)
-            const targetNode = newNodes.find((n) => n.data._generatedId === conn.target)
-
-            if (sourceNode && targetNode) {
-              newEdges.push({
-                id: `${sourceNode.id}-${targetNode.id}`,
-                source: sourceNode.id,
-                target: targetNode.id,
-                markerEnd: { type: MarkerType.ArrowClosed, width: 24, height: 24 },
-                style: { stroke: CONNECTION_COLORS.suggest },
-              })
-            }
-          })
-
-          setEdges((eds) => [...eds, ...newEdges])
+          reactFlowInstance?.fitView({ padding: 0.2 })
         }, 100)
-
-        // Apply configs to nodes
-        if (suggestion.configs) {
-          setTimeout(() => {
-            setNodes((nds) =>
-              nds.map((node) => {
-                const serviceId = node.data._generatedId
-                if (serviceId && suggestion.configs[serviceId]) {
-                  return {
-                    ...node,
-                    data: {
-                      ...node.data,
-                      properties: {
-                        ...node.data.properties,
-                        ...suggestion.configs[serviceId],
-                      },
-                    },
-                  }
-                }
-                return node
-              })
-            )
-          }, 200)
-        }
-
-        toast.success('Infrastructure suggestion applied successfully!')
       } catch (error) {
         console.error('Error applying suggestion:', error)
         toast.error('Failed to apply infrastructure suggestion')
@@ -470,8 +437,8 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     [reactFlowInstance, result.services, setNodes, setEdges]
   )
 
-  if (isShowGenerateInfra) {
-    return (
+  return (
+    <>
       <GenerateInfra
         isOpen={isShowGenerateInfra}
         onClose={() => {
@@ -479,15 +446,12 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
         }}
         onApplySuggestion={handleApplySuggestion}
       />
-    )
-  }
 
-  return (
-    <>
       {showModalTerraform && (
         <PreviewTerraformModal
           open={showModalTerraform}
           onClose={() => setShowModalTerraform(false)}
+          sessionId={sessionId}
           files={terraformFiles}
           loading={isLoading}
         />
@@ -516,8 +480,8 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
               </div>
             ))}
           </div>
-          <Button onClick={exportConfig} className="w-full py-2 bg-green-500">
-            Deploy
+          <Button onClick={generateTerraform} className="w-full py-2 bg-green-500">
+            Generate Terraform
           </Button>
         </div>
 
@@ -565,6 +529,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
             onDrop={onDrop}
             onDragOver={onDragOver}
             onNodeClick={handleNodeClick}
+            nodeTypes={nodeTypes}
             fitView
             proOptions={{ hideAttribution: true }}
             className="bg-black"

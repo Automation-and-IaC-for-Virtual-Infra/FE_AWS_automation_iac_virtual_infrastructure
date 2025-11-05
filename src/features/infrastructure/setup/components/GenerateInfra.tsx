@@ -1,39 +1,34 @@
 'use client'
 
 import { MessageContent } from '@/components/chat/MessageContent'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ROUTES } from '@/constants/route'
 import { useInfrastructureChat } from '@/hooks/useInfrastructureChat'
 import { cn } from '@/lib/utils'
 import { cx } from 'class-variance-authority'
-import {
-  AlertCircle,
-  Brain,
-  CheckCircle,
-  FileJson,
-  Loader2,
-  Rocket,
-  Search,
-  Send,
-  X,
-} from 'lucide-react'
+import { AlertCircle, Brain, CheckCircle, Loader2, Rocket, Search, Send, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
+import { InfraData } from '../libs/types'
+import { mappingInfraDataToReactFlow } from '../libs/utils'
 
 interface GenerateInfraProps {
   isOpen: boolean
   onClose: () => void
-  onApplySuggestion?: (suggestion: any) => void
+  onApplySuggestion?: (suggestion: any, sessionId: string) => void
 }
 
 export function GenerateInfra({ isOpen, onClose, onApplySuggestion }: GenerateInfraProps) {
   const router = useRouter()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [input, setInput] = useState('')
-  const [appliedSuggestions, setAppliedSuggestions] = useState<Set<string>>(new Set())
 
-  const { messages, isLoading, sendMessage, generateInfrastructure } = useInfrastructureChat()
+  const { messages, isLoading, sendMessage, generateInfrastructure, sessionId } =
+    useInfrastructureChat()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -43,11 +38,13 @@ export function GenerateInfra({ isOpen, onClose, onApplySuggestion }: GenerateIn
     scrollToBottom()
   }, [messages])
 
-  const handleApplySuggestion = (messageId: string, suggestion: any) => {
+  const handleApplySpec = (spec: InfraData) => {
     if (onApplySuggestion) {
-      onApplySuggestion(suggestion)
-      setAppliedSuggestions((prev) => new Set(prev).add(messageId))
-      setTimeout(() => onClose(), 500)
+      onApplySuggestion(mappingInfraDataToReactFlow(spec), sessionId)
+      toast.success('Infrastructure applied to diagram successfully!')
+      setTimeout(() => {
+        onClose()
+      }, 500)
     }
   }
 
@@ -201,45 +198,65 @@ export function GenerateInfra({ isOpen, onClose, onApplySuggestion }: GenerateIn
                   )}
 
                 {/* Infrastructure Suggestion Card */}
-                {message.suggestion?.services &&
-                  !message.isStreaming &&
-                  !message.readyToGenerate && (
-                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-sm animate-fade-in">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileJson className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-semibold">Infrastructure Suggestion</span>
+                {message.generatedSpec && (
+                  <Card className="mt-4 border-2 border-green-500">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="w-5 h-5" />
+                        Infrastructure Specification Generated
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Summary */}
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-500">Project</p>
+                          <p className="font-medium">{message.generatedSpec.project}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Region</p>
+                          <p className="font-medium">{message.generatedSpec.region}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Resources</p>
+                          <p className="font-medium">{message.generatedSpec.resources.length}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Connections</p>
+                          <p className="font-medium">{message.generatedSpec.connections.length}</p>
+                        </div>
                       </div>
 
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                        <p>
-                          <strong>Services:</strong> {message.suggestion.services?.length || 0}
-                        </p>
-                        <p>
-                          <strong>Connections:</strong>{' '}
-                          {message.suggestion.connections?.length || 0}
-                        </p>
+                      {/* Resources List */}
+                      <div>
+                        <p className="text-sm font-semibold mb-2">Resources:</p>
+                        <div className="space-y-1">
+                          {message.generatedSpec.resources.map((resource) => (
+                            <div
+                              key={resource.id}
+                              className="flex items-center gap-2 text-sm px-2 py-1 bg-gray-50 rounded"
+                            >
+                              <span className="font-mono text-xs text-gray-500">{resource.id}</span>
+                              <span className="font-medium">{resource.name || resource.type}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {resource.type.split('::').pop()}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
                       </div>
 
+                      {/* Apply Button */}
                       <Button
-                        size="sm"
-                        onClick={() => handleApplySuggestion(message.id, message.suggestion)}
-                        disabled={appliedSuggestions.has(message.id)}
-                        className="w-full"
+                        onClick={() => handleApplySpec(message.generatedSpec!)}
+                        className="w-full bg-green-600 hover:bg-green-700"
                       >
-                        {appliedSuggestions.has(message.id) ? (
-                          <>
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Applied
-                          </>
-                        ) : (
-                          <>
-                            <FileJson className="w-4 h-4 mr-2" />
-                            Apply to Infrastructure
-                          </>
-                        )}
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Apply to Diagram
                       </Button>
-                    </div>
-                  )}
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
           ))}
