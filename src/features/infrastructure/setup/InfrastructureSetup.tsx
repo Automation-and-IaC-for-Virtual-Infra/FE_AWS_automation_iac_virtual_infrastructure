@@ -1,7 +1,5 @@
 'use client'
 
-import { ChatBotModal } from '@/components/ChatBotModal'
-import { FloatingChatButton } from '@/components/FloatingChatButton'
 import PromptConfigBox from '@/components/PromptConfigBox'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,9 +9,8 @@ import {
   AwsServiceConnection,
   ListAwsServicesData,
 } from '@/features/aws/services/libs/types'
-import { useChatBot } from '@/hooks/useChatBot'
 import { formatCamelCase } from '@/utils/string.utils'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import ReactFlow, {
   Background,
   Connection,
@@ -29,6 +26,37 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { toast } from 'sonner'
+import { GenerateInfra } from './components/GenerateInfra'
+import { PreviewTerraformModal } from './components/TerraformPreviewModal'
+
+// TODO: remove it
+const MOCK_FILES = [
+  {
+    filename: 'main.tf',
+    content:
+      'provider "aws" {\n  region = "ap-southeast-1"\n}\n\nmodule "vpc" {\n  source = "./modules/vpc"\n  cidr_block = "10.0.0.0/16"\n}\n\nmodule "ec2" {\n  source = "./modules/ec2"\n  instance_type = "t3.micro"\n  ami = "ami-0abcdef1234567890"\n  subnet_id = module.vpc.public_subnet_id\n  key_name = "my-key"\n}',
+  },
+  {
+    filename: 'variables.tf',
+    content:
+      'variable "region" {\n  description = "AWS region"\n  type = string\n  default = "ap-southeast-1"\n}\n\nvariable "instance_type" {\n  description = "EC2 instance type"\n  type = string\n  default = "t3.micro"\n}',
+  },
+  {
+    filename: 'outputs.tf',
+    content:
+      'output "instance_public_ip" {\n  description = "Public IP of the EC2 instance"\n  value = module.ec2.public_ip\n}\n\noutput "vpc_id" {\n  description = "ID of created VPC"\n  value = module.vpc.vpc_id\n}',
+  },
+  {
+    filename: 'modules/vpc/main.tf',
+    content:
+      'resource "aws_vpc" "this" {\n  cidr_block = var.cidr_block\n  enable_dns_support = true\n  enable_dns_hostnames = true\n  tags = { Name = "${terraform.workspace}-vpc" }\n}\n\nresource "aws_subnet" "public" {\n  vpc_id = aws_vpc.this.id\n  cidr_block = "10.0.1.0/24"\n  map_public_ip_on_launch = true\n  availability_zone = "ap-southeast-1a"\n  tags = { Name = "${terraform.workspace}-public-subnet" }\n}\n\noutput "public_subnet_id" {\n  value = aws_subnet.public.id\n}',
+  },
+  {
+    filename: 'modules/ec2/main.tf',
+    content:
+      'resource "aws_instance" "this" {\n  ami = var.ami\n  instance_type = var.instance_type\n  subnet_id = var.subnet_id\n  key_name = var.key_name\n  tags = {\n    Name = "${terraform.workspace}-instance"\n  }\n}\n\noutput "public_ip" {\n  value = aws_instance.this.public_ip\n}',
+  },
+]
 
 const initialNodes: Node[] = []
 const initialEdges: Edge[] = []
@@ -49,15 +77,13 @@ const CONNECTION_COLORS = {
 }
 
 export default function InfrastructureSetup({ result }: { result: ListAwsServicesData }) {
-  const { isOpen, setIsOpen, handleSendMessage } = useChatBot()
-
   const [nodes, setNodes, onNodesChange] = useNodesState<AwsService>(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
 
-  const [isFirstLoad, setIsFirstLoad] = useState(true)
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
   const [selectedNode, setSelectedNode] = useState<Node<AwsService> | null>(null)
   const [searchValue, setSearchValue] = useState('')
+  const [isShowGenerateInfra, setIsShowGenerateInfra] = useState(true)
 
   const [isConnecting, setIsConnecting] = useState(false)
   const [connectionStats, setConnectionStats] = useState({
@@ -65,6 +91,10 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     recommended: 0,
     optional: 0,
   })
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [showModalTerraform, setShowModalTerraform] = useState(false)
+  const [terraformFiles, setTerraformFiles] = useState<{ name: string; content: string }[]>([])
 
   const filteredServices = useMemo(() => {
     if (!searchValue) return result.services
@@ -318,15 +348,22 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     setSelectedNode(updatedNodes[nodeIndex])
   }
 
-  const exportConfig = () => {
+  const exportConfig = async () => {
     const payload = { nodes, edges }
     console.log('Send to BE:', payload)
-    // fetch("/api/deploy", { method: "POST", body: JSON.stringify(payload) })
-  }
+    setIsLoading(true)
+    setShowModalTerraform(true)
 
-  const handleChatMessage = async (message: string) => {
-    const response = await handleSendMessage(message)
-    return response // Return response to ChatBotModal
+    // TODO: call API generate terraform files
+    await new Promise((resolve) => setTimeout(resolve, 5000)) // simulate delay
+
+    setIsLoading(false)
+    setTerraformFiles(
+      MOCK_FILES.map((file) => ({
+        name: file.filename,
+        content: file.content,
+      }))
+    )
   }
 
   const handleUnselectNode = () => {
@@ -433,31 +470,28 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     [reactFlowInstance, result.services, setNodes, setEdges]
   )
 
-  useEffect(() => {
-    // TODO: if clear new infra, show modal is default
-    if (nodes.length === 0) {
-      setIsOpen(true)
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  if (isShowGenerateInfra) {
+    return (
+      <GenerateInfra
+        isOpen={isShowGenerateInfra}
+        onClose={() => {
+          setIsShowGenerateInfra(false)
+        }}
+        onApplySuggestion={handleApplySuggestion}
+      />
+    )
+  }
 
   return (
     <>
-      <FloatingChatButton isOpen={isOpen} onToggle={() => setIsOpen(!isOpen)} />
-      <ChatBotModal
-        isOpen={isOpen}
-        onClose={() => {
-          if (isFirstLoad) {
-            setIsFirstLoad(false)
-          }
-
-          setIsOpen(false)
-        }}
-        onSendMessage={handleChatMessage}
-        onApplySuggestion={handleApplySuggestion}
-        fullWidth={isFirstLoad}
-      />
+      {showModalTerraform && (
+        <PreviewTerraformModal
+          open={showModalTerraform}
+          onClose={() => setShowModalTerraform(false)}
+          files={terraformFiles}
+          loading={isLoading}
+        />
+      )}
 
       <div className="flex text-black h-[calc(100vh-64px)] overflow-hidden">
         {/* Sidebar */}

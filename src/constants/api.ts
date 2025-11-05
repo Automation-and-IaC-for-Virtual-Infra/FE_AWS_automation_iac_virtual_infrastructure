@@ -12,12 +12,10 @@ export const AWS_API = {
 }
 
 export const COMMON_API = {
-  // PROMPT
-  PROMPT_INFRA: '/prompt/infra',
-  PROMPT_SERVICE_CONFIG: '/prompt/service/config',
-
-  // INFRA
-  INFRA_GENERATE: '/infra/generate',
-  INFRA_DEPLOY: '/infra/deploy',
-  INFRA_UPDATE: '/infra/prompt/infra/update',
+  CHAT: '/chat',
+  GENERATE_SPEC: '/generate_spec',
+  GEN_TF: '/gen_tf',
+  FIX_TF: '/fix_tf',
+  APPLY: '/apply',
+  LIST_SERVICES: '/list_services',
 }

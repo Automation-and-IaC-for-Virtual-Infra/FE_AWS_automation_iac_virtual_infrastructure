@@ -1,15 +1,8 @@
+'use server'
+
 import { ALL_VALUE } from '@/constants/common'
 import { ENV } from '@/constants/env'
-
-export const toFrontendUrl = (path: string) => {
-  const backendUrl = ENV.FRONTEND_SERVER_URL || 'http://localhost:3000'
-  return `${backendUrl}${path}`
-}
-
-export const toBackendUrl = (path: string) => {
-  const backendUrl = ENV.BACKEND_SERVER_URL || 'http://localhost:8001'
-  return `${backendUrl}${path}`
-}
+import { toBackendUrl, toFrontendUrl } from './url'
 
 export const apiRequest = async ({
   path,
@@ -23,6 +16,15 @@ export const apiRequest = async ({
   isFrontend?: boolean
 }) => {
   let url = isFrontend ? toFrontendUrl(path) : toBackendUrl(path)
+
+  // if backend, add API key header
+  if (!isFrontend) {
+    options.headers = {
+      ...options.headers,
+      'X-API-Key': ENV.BACKEND_API_KEY,
+    }
+  }
+
   if (searchParams) {
     const params = new URLSearchParams()
     Object.entries(searchParams).forEach(([key, value]) => {

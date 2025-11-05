@@ -5,16 +5,20 @@ import { Suspense } from 'react'
 
 export default async function ServicesPage() {
   const resServices = await fetchServices()
-  const servicesWithMetrics = filterServicesHasMetrics(resServices.services)
+  if (!resServices) {
+    throw new Error('Failed to fetch services')
+  }
+
+  const servicesWithMetrics = filterServicesHasMetrics(resServices.items || [])
   const resMetrics = await fetchMetrics(servicesWithMetrics.map((s) => s.service_id).join(','))
 
-  if (!resServices.services) {
+  if (!resServices.items) {
     throw new Error('Failed to fetch services')
   }
 
   return (
     <Suspense>
-      <Services services={resServices.services} metrics={resMetrics.data.MetricDataResults} />
+      <Services services={resServices.items} metrics={resMetrics.data.MetricDataResults} />
     </Suspense>
   )
 }
