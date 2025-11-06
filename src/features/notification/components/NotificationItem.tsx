@@ -1,94 +1,140 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DATE_FORMAT } from '@/constants/common'
+import { Card, CardHeader } from '@/components/ui/card'
+import { DATE_FORMAT, NOTIFICATION_LABELS, NOTIFICATION_TYPES_ENUM } from '@/constants/common'
 import { cx } from 'class-variance-authority'
 import { format } from 'date-fns'
-import { ExternalLink } from 'lucide-react'
-import { AwsNotification2 } from '../libs/types'
+import { CheckCircle2, Clock, ExternalLink, XCircle } from 'lucide-react'
+import { useState } from 'react'
+import { handleMarkAsRead } from '../libs/actions'
+import { NotificationData } from '../libs/types'
 
-export default function NotificationItem({ item }: { item: AwsNotification2 }) {
-  // --- Define dynamic colors based on status ---
-  const statusColor =
-    {
-      SUCCEEDED: 'bg-green-500 border-green-500 text-white',
-      FAILED: 'bg-red-500 border-red-500 text-white',
-      IN_PROGRESS: 'bg-blue-500 border-blue-500 text-white',
-      STOPPED: 'bg-gray-500 border-gray-500 text-white',
-      CANCELED: 'bg-gray-400 border-gray-400 text-white',
-    }[item.status] || 'bg-slate-400 text-white'
+const statusConfig = {
+  [NOTIFICATION_TYPES_ENUM.BUILD_SUCCESS]: {
+    badge: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    icon: CheckCircle2,
+    iconColor: 'text-emerald-600',
+    border: 'border-l-emerald-500',
+  },
+  [NOTIFICATION_TYPES_ENUM.BUILD_ERROR]: {
+    badge: 'bg-rose-100 text-rose-700 border-rose-200',
+    icon: XCircle,
+    iconColor: 'text-rose-600',
+    border: 'border-l-rose-500',
+  },
+  [NOTIFICATION_TYPES_ENUM.APPLY_SUCCESS]: {
+    badge: 'bg-blue-100 text-blue-700 border-blue-200',
+    icon: CheckCircle2,
+    iconColor: 'text-blue-600',
+    border: 'border-l-blue-500',
+  },
+  [NOTIFICATION_TYPES_ENUM.APPLY_ERROR]: {
+    badge: 'bg-orange-100 text-orange-700 border-orange-200',
+    icon: XCircle,
+    iconColor: 'text-orange-600',
+    border: 'border-l-orange-500',
+  },
+  [NOTIFICATION_TYPES_ENUM.NEED_APPROVAL]: {
+    badge: 'bg-amber-100 text-amber-700 border-amber-200',
+    icon: Clock,
+    iconColor: 'text-amber-600',
+    border: 'border-l-amber-500',
+  },
+}
 
-  const cardGradient =
-    {
-      SUCCEEDED: 'border-green-300 from-white to-green-50',
-      FAILED: 'border-red-300 from-white to-red-50',
-      IN_PROGRESS: 'border-blue-300 from-white to-blue-50',
-      STOPPED: 'border-gray-300 from-white to-gray-50',
-      CANCELED: 'border-gray-200 from-white to-gray-50',
-    }[item.status] || 'border-slate-300 from-white to-slate-50'
+export default function NotificationItem({ item }: { item: NotificationData }) {
+  const [isRead, setIsRead] = useState(item.is_read)
 
-  // --- Extra info to show in CardContent ---
-  const extra: Record<string, string | number | undefined> = {
-    ...(item.errorMessage && { ErrorMessage: item.errorMessage }),
+  const config = statusConfig[item.type as NOTIFICATION_TYPES_ENUM] || {
+    badge: 'bg-gray-100 text-gray-700 border-gray-200',
+    icon: CheckCircle2,
+    iconColor: 'text-gray-600',
+    border: 'border-l-gray-500',
+  }
+
+  const Icon = config.icon
+
+  const onMarkAsRead = async () => {
+    if (isRead) return
+
+    const res = await handleMarkAsRead(item.id)
+    if (res.success) {
+      setIsRead(1)
+    }
   }
 
   return (
     <Card
-      key={item.id}
-      className={cx('border bg-gradient-to-br hover:shadow-md transition py-4 gap-4', cardGradient)}
-    >
-      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <div className="space-y-1">
-          {/* --- Status & Source --- */}
-          <div className="flex flex-wrap gap-2 text-xs text-gray-500 items-center">
-            <Badge className={cx('px-2', statusColor)}>{item.status}</Badge>
-
-            <Badge variant="secondary" className="bg-slate-100 border-slate-200 text-slate-800">
-              {item.detailType} {item?.buildNumber ? `#${item.buildNumber}` : ''}
-            </Badge>
-
-            <span className="text-gray-500">• {item.region}</span>
-            <span className="text-gray-400">[{format(new Date(item.time), DATE_FORMAT.FULL)}]</span>
-          </div>
-
-          {/* --- Resource name --- */}
-          <CardTitle className="text-base font-semibold text-gray-900">
-            {item?.projectName || item?.pipelineName}
-          </CardTitle>
-
-          {/* --- Notification type --- */}
-          {/* <p className="text-sm text-gray-700">{item.projectName}</p> */}
-        </div>
-
-        {/* --- View details link --- */}
-        {item?.logsLink && (
-          <Button
-            variant="secondary"
-            size="sm"
-            asChild
-            className="flex items-center gap-1 text-blue-700 hover:text-blue-900"
-          >
-            <a href={item.logsLink} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="w-4 h-4" />
-              View Details
-            </a>
-          </Button>
-        )}
-      </CardHeader>
-
-      {/* --- Extra metadata --- */}
-      {Object.keys(extra).length > 0 && (
-        <CardContent>
-          <div className="text-sm text-gray-700 space-y-1">
-            {Object.entries(extra).map(([key, value]) => (
-              <div key={key} className="flex justify-between border-b border-gray-100 pb-1">
-                <span className="font-medium text-gray-500">{key}</span>
-                <span className="text-gray-800 break-all">{String(value)}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
+      className={cx(
+        'border-l-4 hover:shadow-lg transition-all duration-200 p-0 pt-4 relative cursor-pointer',
+        isRead ? 'bg-white' : 'bg-blue-50',
+        config.border
       )}
+    >
+      {!isRead && (
+        <div className="absolute -top-1 right-0">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+          </span>
+        </div>
+      )}
+
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3 flex-1">
+            {/* Icon */}
+            <div className={cx('mt-0.5', config.iconColor)}>
+              <Icon className="w-5 h-5" />
+            </div>
+
+            <div className="flex-1 space-y-2">
+              {/* Status Badge & Source */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className={cx('px-2.5 py-0.5 font-medium', config.badge)}>
+                  {NOTIFICATION_LABELS[item.type]}
+                </Badge>
+                <Badge variant="outline" className="px-2.5 py-0.5 font-normal text-gray-600">
+                  {item.title}
+                </Badge>
+              </div>
+
+              {/* Content */}
+              <div className="text-sm text-gray-700 leading-relaxed">
+                {item.content.split('\n').map((line, index) => (
+                  <p key={index} className={index > 0 ? 'mt-1' : ''}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+
+              {/* Timestamp */}
+              <p className="text-xs text-gray-500">
+                {format(new Date(item.updated_at || item.created_at), DATE_FORMAT.FULL)}
+              </p>
+            </div>
+          </div>
+
+          {/* View Details Button */}
+          {item?.detail_link && (
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className={cx(
+                'shrink-0 text-blue-600 hover:text-blue-700',
+                isRead ? 'hover:bg-blue-50 dark:hover:bg-blue-100' : 'hover:bg-blue-200'
+              )}
+              onClick={onMarkAsRead}
+            >
+              <a href={item.detail_link} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="w-4 h-4 mr-1.5" />
+                Details
+              </a>
+            </Button>
+          )}
+        </div>
+      </CardHeader>
     </Card>
   )
 }

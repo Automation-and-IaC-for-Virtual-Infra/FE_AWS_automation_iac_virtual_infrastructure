@@ -23,12 +23,11 @@ export interface ApiError {
  * Paginated Response
  */
 export interface PaginatedResponse<T> extends ApiResponse<T> {
-  pagination?: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
+  items: T[]
+  page: number
+  page_size: number
+  total: number
+  pages: number
 }
 
 /**
