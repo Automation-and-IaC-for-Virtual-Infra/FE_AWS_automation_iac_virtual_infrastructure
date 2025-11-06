@@ -4,6 +4,7 @@ import Editor from '@monaco-editor/react'
 import { DialogTitle } from '@radix-ui/react-dialog'
 import { Github, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { handlePushToRepository } from '../libs/actions'
 
 interface TerraformFile {
@@ -24,6 +25,7 @@ export function PreviewTerraformModal({
   files: TerraformFile[]
   loading?: boolean
 }) {
+  const [isLoading, setIsLoading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<TerraformFile | null>(null)
   const [code, setCode] = useState<string | null>(null)
 
@@ -91,9 +93,15 @@ export function PreviewTerraformModal({
   }
 
   const onPushToRepo = async () => {
+    setIsLoading(true)
     console.log('Pushing Terraform configuration to repository...')
     const res = await handlePushToRepository(sessionId)
     console.log('🚀 ~ onPushToRepo ~ res:', res)
+    if (res.success) {
+      setIsLoading(false)
+      toast.success('Successfully pushed to repository!')
+      onClose()
+    }
   }
 
   const handleDownload = () => {
@@ -158,9 +166,14 @@ export function PreviewTerraformModal({
                   <Button size="sm" variant="outline" onClick={handleDownload}>
                     Download
                   </Button>
-                  <Button size="sm" className="bg-green-600 text-white" onClick={onPushToRepo}>
+                  <Button
+                    size="sm"
+                    className="bg-green-600 text-white"
+                    onClick={onPushToRepo}
+                    disabled={isLoading}
+                  >
                     <Github />
-                    Push to Repository
+                    {isLoading ? 'Pushing...' : 'Push to Repo'}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={onClose}>
                     Close

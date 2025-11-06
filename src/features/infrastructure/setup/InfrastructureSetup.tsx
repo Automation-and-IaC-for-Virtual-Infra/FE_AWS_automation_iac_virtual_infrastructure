@@ -1,6 +1,7 @@
 'use client'
 
 import PromptConfigBox from '@/components/PromptConfigBox'
+import { TagsInput } from '@/components/TagsInput'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -314,13 +315,14 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     setMessagePromptNode('')
   }
 
-  const handleConfigChange = (key: string, value: string | boolean) => {
+  const handleConfigChange = (key: string, value: any) => {
     if (!selectedNode) return
 
     const { properties = {} } = selectedNode?.data
     const updatedNodes = [...nodes]
     const nodeIndex = updatedNodes.findIndex((n) => n.id === selectedNode?.id)
     if (nodeIndex === -1) return
+
     updatedNodes[nodeIndex] = {
       ...updatedNodes[nodeIndex],
       data: {
@@ -329,7 +331,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
           ...properties,
           [key]: {
             ...properties[key],
-            value,
+            value, // ✅ Accept any type: string, boolean, number, object, array
           },
         },
       },
@@ -613,24 +615,85 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
                 {sortedPropertiesSelectedNode.map((cfgKey: string) => {
                   const { Required, PrimitiveType, value } =
                     selectedNode.data?.properties?.[cfgKey] || {}
+
                   const isRequired = selectedNode.data.requiredProps.includes(cfgKey) || Required
-                  const isBoolean = PrimitiveType === 'Boolean'
+                  const isTags = cfgKey.toLowerCase() === 'tags'
+                  const isBoolean = PrimitiveType === 'Boolean' || typeof value === 'boolean'
+                  const isArray = Array.isArray(value)
+                  const isObject = value && typeof value === 'object' && !Array.isArray(value)
 
                   return (
-                    <div key={cfgKey} className="mb-2">
+                    <div key={cfgKey} className="mb-4">
                       <label className="block text-sm font-medium mb-1">
                         {formatCamelCase(cfgKey)}
                         {isRequired && <span className="text-red-500">*</span>}
                       </label>
-                      {isBoolean ? (
+
+                      {/* Tags - Array of {Key, Value} */}
+                      {isTags ? (
+                        <TagsInput
+                          value={value || []}
+                          onChange={(tags) => handleConfigChange(cfgKey, tags)}
+                        />
+                      ) : /* Boolean - Switch */
+                      isBoolean ? (
                         <Switch
-                          checked={value}
+                          checked={!!value}
                           onCheckedChange={(checked) => handleConfigChange(cfgKey, checked)}
                         />
+                      ) : /* Array - JSON Editor */
+                      isArray ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={JSON.stringify(value, null, 2)}
+                            onChange={(e) => {
+                              try {
+                                const parsed = JSON.parse(e.target.value)
+                                handleConfigChange(cfgKey, parsed)
+                              } catch (err) {
+                                // Keep typing, don't update until valid JSON
+                              }
+                            }}
+                            className="w-full min-h-[100px] p-2 border border-gray-400 rounded font-mono text-xs"
+                            placeholder="Enter JSON array"
+                          />
+                        </div>
+                      ) : /* Object - JSON Editor */
+                      isObject ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={JSON.stringify(value, null, 2)}
+                            onChange={(e) => {
+                              try {
+                                const parsed = JSON.parse(e.target.value)
+                                handleConfigChange(cfgKey, parsed)
+                              } catch (err) {
+                                // Keep typing, don't update until valid JSON
+                              }
+                            }}
+                            className="w-full min-h-[100px] p-2 border border-gray-400 rounded font-mono text-xs"
+                            placeholder="Enter JSON object"
+                          />
+                        </div>
                       ) : (
+                        /* String/Number - Input */
                         <Input
-                          value={value || ''}
-                          onChange={(e) => handleConfigChange(cfgKey, e.target.value)}
+                          value={value ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            // Try to parse as number if PrimitiveType is Integer/Double
+                            if (PrimitiveType === 'Integer' || PrimitiveType === 'Double') {
+                              const num = Number(val)
+                              handleConfigChange(cfgKey, isNaN(num) ? val : num)
+                            } else {
+                              handleConfigChange(cfgKey, val)
+                            }
+                          }}
+                          type={
+                            PrimitiveType === 'Integer' || PrimitiveType === 'Double'
+                              ? 'number'
+                              : 'text'
+                          }
                           className="w-full border border-gray-400"
                         />
                       )}
