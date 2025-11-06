@@ -12,20 +12,25 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ROUTES } from '@/constants/route'
 import { logoutAction } from '@/features/auth/lib/actions'
+import { fetchNotifications } from '@/features/notification/libs/fetchers'
 import { cx } from 'class-variance-authority'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 const navItems = [
   { name: 'Dashboard', href: ROUTES.DASHBOARD },
-  { name: 'Infrastructure', href: ROUTES.INFRASTRUCTURE },
-  { name: 'Notifications', href: ROUTES.NOTIFICATIONS },
+  { name: 'Infrastructure', href: ROUTES.INFRASTRUCTURE_SETUP },
   { name: 'Services', href: ROUTES.SERVICES },
+  { name: 'Notifications', href: ROUTES.NOTIFICATIONS },
 ]
 
 export default function Header() {
   const router = useRouter()
   const pathname = usePathname()
+
+  const [countUnread, setCountUnread] = useState(0)
 
   const handleSignOut = async () => {
     const res = await logoutAction()
@@ -34,27 +39,52 @@ export default function Header() {
     }
   }
 
+  const getNotifications = async () => {
+    try {
+      const response = await fetchNotifications({ page: 1, per_page: 10 })
+      if (response.unread_count) {
+        setCountUnread(response.unread_count || 0)
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error)
+    }
+  }
+
+  // auto call notification each 1 hour
+  useEffect(() => {
+    getNotifications()
+  }, [])
+
   return (
     <header className="w-full bg-white px-6 py-3 flex items-center justify-between border-b shadow-md h-16">
       {/* Logo */}
       <div className="font-bold text-xl text-blue-600">
-        <Link href="/">LOGO TEAM</Link>
+        <Link href="/">
+          <Image src="logo-cropped.svg" alt="AWS Flow Logo" width={100} height={400} priority />
+        </Link>
       </div>
 
       {/* Nav menu */}
       <nav className="flex gap-6">
         {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cx(
-              'text-md font-medium transition-colors hover:text-blue-600',
-              pathname === item.href ? 'text-blue-600' : 'text-gray-600',
-              pathname === item.href ? 'underline underline-offset-4' : ''
+          <div key={item.href} className="relative">
+            <Link
+              href={item.href}
+              className={cx(
+                'text-md font-medium transition-colors hover:text-blue-600',
+                pathname === item.href ? 'text-blue-600' : 'text-gray-600',
+                pathname === item.href ? 'underline underline-offset-4' : ''
+              )}
+            >
+              {item.name}
+            </Link>
+
+            {item.name === 'Notifications' && countUnread > 0 && (
+              <span className="absolute -top-1 -right-4 inline-flex items-center justify-center px-1 py-0.5 text-[10px] font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                {countUnread}
+              </span>
             )}
-          >
-            {item.name}
-          </Link>
+          </div>
         ))}
       </nav>
 

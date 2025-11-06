@@ -12,7 +12,7 @@ export interface NotificationData {
 }
 
 export interface NotificationSearchParams {
-  type: (typeof NOTIFICATION_OPTIONS)[number]['value'] | string
+  type?: (typeof NOTIFICATION_OPTIONS)[number]['value'] | string
   page: number
   per_page: number
 }

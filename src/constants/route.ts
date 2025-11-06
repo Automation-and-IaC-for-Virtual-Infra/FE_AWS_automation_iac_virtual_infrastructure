@@ -8,7 +8,7 @@ export const ROUTES = {
   DASHBOARD: '/',
   NOTIFICATIONS: '/notifications',
   AWS_VERIFICATION: '/aws-verification',
-  INFRASTRUCTURE: '/infrastructure',
+  // INFRASTRUCTURE: '/infrastructure',
   INFRASTRUCTURE_SETUP: '/infrastructure/setup',
   ACCOUNT_SETTINGS: '/account/settings',
   AWS_SERVICES: '/aws-services',

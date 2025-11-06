@@ -67,7 +67,7 @@ export function GenerateInfra({ isOpen, onClose, onApplySuggestion }: GenerateIn
         <div className="flex items-center justify-between px-4 py-2 border-b bg-gradient-to-r from-blue-600 to-purple-700 text-white shadow-sm">
           <h2 className="text-lg font-semibold tracking-tight">Infrastructure Assistant</h2>
           <button
-            onClick={() => router.push(ROUTES.INFRASTRUCTURE)}
+            onClick={() => router.push(ROUTES.DASHBOARD)}
             className="p-2 rounded-md hover:bg-white/20 transition-colors"
           >
             <X className="w-5 h-5" />

@@ -5,7 +5,7 @@ import { DATE_FORMAT, NOTIFICATION_LABELS, NOTIFICATION_TYPES_ENUM } from '@/con
 import { cx } from 'class-variance-authority'
 import { format } from 'date-fns'
 import { CheckCircle2, Clock, ExternalLink, XCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { handleMarkAsRead } from '../libs/actions'
 import { NotificationData } from '../libs/types'
 
@@ -54,14 +54,53 @@ export default function NotificationItem({ item }: { item: NotificationData }) {
 
   const Icon = config.icon
 
-  const onMarkAsRead = async () => {
+  const onMarkAsRead = useCallback(async () => {
     if (isRead) return
 
     const res = await handleMarkAsRead(item.id)
     if (res.success) {
       setIsRead(1)
     }
-  }
+  }, [isRead, item.id])
+
+  const content = useMemo(() => {
+    const splitContent = item.content.split('\n')
+    if (item.type === NOTIFICATION_TYPES_ENUM.NEED_APPROVAL) {
+      return splitContent.map((line, index) => {
+        if (index === 3) return null // Skip token line
+        if (index === 4) {
+          const link = line.replace('Approval Link:', '').trim()
+          return (
+            <div key={index} className="flex items-center gap-2 mt-1">
+              <span>Approval Link: </span>
+              <a
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-700 hover:underline flex gap-1 items-center"
+                onClick={onMarkAsRead}
+              >
+                <ExternalLink className="w-3 h-3" />
+                Link
+              </a>
+            </div>
+          )
+        }
+
+        return (
+          <p key={index} className={index > 0 ? 'mt-1' : ''}>
+            {line}
+          </p>
+        )
+      })
+    }
+
+    return splitContent.map((line, index) => (
+      <p key={index} className={index > 0 ? 'mt-1' : ''}>
+        {line}
+      </p>
+    ))
+  }, [item.content, item.type, onMarkAsRead])
 
   return (
     <Card
@@ -100,13 +139,7 @@ export default function NotificationItem({ item }: { item: NotificationData }) {
               </div>
 
               {/* Content */}
-              <div className="text-sm text-gray-700 leading-relaxed">
-                {item.content.split('\n').map((line, index) => (
-                  <p key={index} className={index > 0 ? 'mt-1' : ''}>
-                    {line}
-                  </p>
-                ))}
-              </div>
+              <div className="text-sm text-gray-700 leading-relaxed">{content}</div>
 
               {/* Timestamp */}
               <p className="text-xs text-gray-500">
@@ -128,8 +161,8 @@ export default function NotificationItem({ item }: { item: NotificationData }) {
               onClick={onMarkAsRead}
             >
               <a href={item.detail_link} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="w-4 h-4 mr-1.5" />
-                Details
+                <ExternalLink className="w-4 h-4 mr-1" />
+                View log
               </a>
             </Button>
           )}

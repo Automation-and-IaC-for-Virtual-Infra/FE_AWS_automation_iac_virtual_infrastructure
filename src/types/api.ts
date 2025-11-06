@@ -28,6 +28,7 @@ export interface PaginatedResponse<T> extends ApiResponse<T> {
   page_size: number
   total: number
   pages: number
+  unread_count?: number
 }
 
 /**
