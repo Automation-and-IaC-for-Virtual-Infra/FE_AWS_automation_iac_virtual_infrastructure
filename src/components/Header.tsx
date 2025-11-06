@@ -15,7 +15,6 @@ import { logoutAction } from '@/features/auth/lib/actions'
 import { cx } from 'class-variance-authority'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { ThemeSwitch } from './ThemeSwitch'
 
 const navItems = [
   { name: 'Dashboard', href: ROUTES.DASHBOARD },
@@ -61,7 +60,7 @@ export default function Header() {
 
       {/* User info */}
       <div className="flex items-center gap-4">
-        <ThemeSwitch />
+        {/* <ThemeSwitch /> */}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -1,48 +1,18 @@
-import { ALL_VALUE } from '@/constants/common'
-
-export const NOTIFICATION_TYPES = [
-  ALL_VALUE,
-  'BUILD SUCCESS',
-  'APPLY SUCCESS',
-  'BUILD ERROR',
-  'APPLY ERROR',
-  'NEED APPROVAL',
-] as const
-
-export const AWS_SERVICE_NAMES = ['CodeBuild', 'CodePipeline'] as const
-
-export const AWS_NOTIFICATION_STATUSES = [
-  'SUCCEEDED',
-  'FAILED',
-  'RUNNING',
-  'STOPPED',
-  'ERROR',
-] as const
-
-export interface AwsNotification {
-  id: string
-  service: (typeof AWS_SERVICE_NAMES)[number]
-  type: string
-  status: (typeof AWS_NOTIFICATION_STATUSES)[number]
-  resourceName: string
-  region: string
-  time: string
-  detailLink?: string
-  extra?: Record<string, any>
-}
-
+import { NOTIFICATION_OPTIONS } from './../../../constants/common'
 export interface NotificationData {
   id: number
-  datetime: string
-  type: (typeof NOTIFICATION_TYPES)[number]
   title: string
   content: string
-  link: string
+  interpretation: string | null
+  type: number
+  detail_link: string
+  is_read: number
+  created_at: string
+  updated_at: string
 }
 
 export interface NotificationSearchParams {
-  status: (typeof AWS_NOTIFICATION_STATUSES)[number]
-  service: (typeof AWS_SERVICE_NAMES)[number]
+  type: (typeof NOTIFICATION_OPTIONS)[number]['value'] | string
   page: number
   per_page: number
 }

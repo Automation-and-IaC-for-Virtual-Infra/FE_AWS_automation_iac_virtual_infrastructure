@@ -25,4 +25,6 @@ export const COMMON_API = {
   GIT_PUSH: '/git_push',
 
   LIST_SERVICES: '/list_services',
+  NOTIFICATIONS: '/notifications',
+  READ_NOTI: '/read_noti',
 }
