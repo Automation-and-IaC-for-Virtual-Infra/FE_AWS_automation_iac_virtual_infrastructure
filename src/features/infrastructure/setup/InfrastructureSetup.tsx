@@ -45,6 +45,7 @@ const BORDER_NODE = {
 }
 
 const CONNECTION_COLORS = {
+  default: '#888',
   suggest: '#2563eb',
   required: '#ef4444',
   recommended: '#eab308',
@@ -61,6 +62,9 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
   const [selectedNode, setSelectedNode] = useState<Node<AwsService> | null>(null)
   const [searchValue, setSearchValue] = useState('')
   const [isShowGenerateInfra, setIsShowGenerateInfra] = useState(true)
+
+  const [promptNode, setPromptNode] = useState<string>('')
+  const [messagePromptNode, setMessagePromptNode] = useState<string>('')
 
   const [isConnecting, setIsConnecting] = useState(false)
   const [connectionStats, setConnectionStats] = useState({
@@ -191,42 +195,45 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
       const { source, target } = params
       if (!source || !target) return
 
-      const sourceNode = nodes.find((n) => n.id === source)
-      const targetNode = nodes.find((n) => n.id === target)
+      // const sourceNode = nodes.find((n) => n.id === source)
+      // const targetNode = nodes.find((n) => n.id === target)
 
       // If node is not found or there is no connections configuration, do not allow connection
-      if (!sourceNode || !sourceNode.data?.connections) {
-        toast.error(`"${sourceNode?.data?.displayName}" cannot connect to any service.`)
-        return
-      }
+      // if (!sourceNode || !sourceNode.data?.connections) {
+      //   toast.error(`"${sourceNode?.data?.displayName}" cannot connect to any service.`)
+      //   return
+      // }
 
       // If connections does not include target node's service id, do not allow connection
-      const { requiredConnections, recommendedConnections, optionalConnections } =
-        sourceNode.data.connections
-      const listConnections = [
-        ...(requiredConnections || []),
-        ...(recommendedConnections || []),
-        ...(optionalConnections || []),
-      ]
+      // const { requiredConnections, recommendedConnections, optionalConnections } =
+      //   sourceNode.data.connections
+      // const listConnections = [
+      //   ...(requiredConnections || []),
+      //   ...(recommendedConnections || []),
+      //   ...(optionalConnections || []),
+      // ]
 
-      if (!targetNode?.data?.id || !listConnections.includes(targetNode?.data?.id)) {
-        toast.error(
-          `Cannot connect "${sourceNode.data.displayName}" to "${targetNode?.data?.displayName}".`
-        )
-        return
-      }
+      // if (!targetNode?.data?.id || !listConnections.includes(targetNode?.data?.id)) {
+      //   toast.error(
+      //     `Cannot connect "${sourceNode.data.displayName}" to "${targetNode?.data?.displayName}".`
+      //   )
+      //   return
+      // }
 
       setEdges((eds) =>
         addEdge(
           {
             ...params,
             markerEnd: { type: MarkerType.ArrowClosed, width: 24, height: 24 },
+            type: 'smoothstep',
+            animated: true,
+            style: { stroke: CONNECTION_COLORS.default },
           },
           eds
         )
       )
     },
-    [setEdges, nodes]
+    [setEdges]
   )
 
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
@@ -280,6 +287,8 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
       )
 
       setSelectedNode(newNode)
+      setPromptNode('')
+      setMessagePromptNode('')
     },
     [reactFlowInstance, result.services, setNodes]
   )
@@ -301,6 +310,8 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
       }))
     )
     setSelectedNode(node)
+    setPromptNode('')
+    setMessagePromptNode('')
   }
 
   const handleConfigChange = (key: string, value: string | boolean) => {
@@ -334,7 +345,6 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     if (res.status === 'ok') {
       const resGenTf = await handleGenTerraform(sessionId)
       if (resGenTf?.success) {
-        toast.success('Terraform files generated successfully!')
         setIsLoading(true)
         setShowModalTerraform(true)
 
@@ -351,6 +361,8 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
 
   const handleUnselectNode = () => {
     setSelectedNode(null)
+    setPromptNode('')
+    setMessagePromptNode('')
     setNodes((nds) =>
       nds.map((n) => ({
         ...n,
@@ -436,6 +448,36 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     },
     [reactFlowInstance, result.services, setNodes, setEdges]
   )
+
+  const handleApplyConfig = (config: { [key: string]: { value: any; type: string } }) => {
+    if (!selectedNode) return
+
+    console.log('Applying config to node:', selectedNode.id, config)
+
+    const updatedNodes = [...nodes]
+    const nodeIndex = updatedNodes.findIndex((n) => n.id === selectedNode?.id)
+    if (nodeIndex === -1) return
+
+    const currentProperties = updatedNodes[nodeIndex].data.properties || {}
+    const newProperties = { ...currentProperties }
+
+    Object.entries(config).forEach(([key, { value }]) => {
+      newProperties[key] = {
+        ...newProperties[key],
+        value,
+      }
+    })
+
+    updatedNodes[nodeIndex] = {
+      ...updatedNodes[nodeIndex],
+      data: {
+        ...updatedNodes[nodeIndex].data,
+        properties: newProperties,
+      },
+    }
+    setNodes(updatedNodes)
+    setSelectedNode(updatedNodes[nodeIndex])
+  }
 
   return (
     <>
@@ -557,7 +599,14 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
               </button>
             </div>
             <div className="mb-2">
-              <PromptConfigBox />
+              <PromptConfigBox
+                prompt={promptNode}
+                setPrompt={setPromptNode}
+                message={messagePromptNode}
+                setMessage={setMessagePromptNode}
+                resourceType={selectedNode.data.resourceType}
+                onApplyConfig={handleApplyConfig}
+              />
             </div>
             {selectedNode?.data?.properties && (
               <div className="flex-1 overflow-y-auto px-2">

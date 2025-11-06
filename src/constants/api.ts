@@ -15,9 +15,14 @@ export const COMMON_API = {
   CHAT: '/chat',
   GENERATE_SPEC: '/generate_spec',
   APPLY_SPEC: '/apply_spec',
+
+  SUGGEST_CONFIG: '/suggest_config',
+
   GEN_TF: '/gen_tf',
   GET_TF: '/get_tf',
   FIX_TF: '/fix_tf',
+
   GIT_PUSH: '/git_push',
+
   LIST_SERVICES: '/list_services',
 }

@@ -20,8 +20,8 @@ export const apiRequest = async ({
   // if backend, add API key header
   if (!isFrontend) {
     options.headers = {
-      ...options.headers,
       'X-API-Key': ENV.BACKEND_API_KEY,
+      ...options.headers,
     }
   }
 
@@ -42,5 +42,42 @@ export const apiRequest = async ({
   if (!response.ok) {
     throw new Error('Failed to fetch API')
   }
-  return response.json()
+  return await response.json()
+}
+
+export const apiBERequest = async ({
+  path,
+  options = {},
+  searchParams,
+}: {
+  path: string
+  options?: RequestInit
+  searchParams?: Record<string, any>
+}) => {
+  let url = toBackendUrl(path)
+
+  options.headers = {
+    'x-api-key': ENV.BACKEND_API_KEY,
+    'Content-Type': 'application/json',
+    ...options.headers,
+  }
+
+  if (searchParams) {
+    const params = new URLSearchParams()
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== ALL_VALUE) {
+        params.append(key, String(value))
+      }
+    })
+    const queryString = params.toString()
+    if (queryString) {
+      url += `?${queryString}`
+    }
+  }
+
+  const response = await fetch(url, options)
+  if (!response.ok) {
+    throw new Error('Failed to fetch API')
+  }
+  return await response.json()
 }

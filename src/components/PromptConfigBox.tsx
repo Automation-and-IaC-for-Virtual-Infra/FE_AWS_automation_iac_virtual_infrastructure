@@ -1,42 +1,40 @@
 'use client'
 
-import { useState } from 'react'
-import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
+import { handleSuggestConfig } from '@/features/infrastructure/setup/libs/actions'
 import { Loader2 } from 'lucide-react'
+import { useState } from 'react'
 
-export default function PromptConfigBox() {
-  const [prompt, setPrompt] = useState('')
+export default function PromptConfigBox({
+  prompt,
+  setPrompt,
+  message,
+  setMessage,
+  resourceType,
+  onApplyConfig,
+}: {
+  prompt: string
+  setPrompt: (value: string) => void
+  message: string
+  setMessage: (value: string) => void
+  resourceType: string
+  onApplyConfig: (config: { [key: string]: { value: any; type: string } }) => void
+}) {
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<string | null>(null)
 
   const handleSubmit = async () => {
     if (!prompt.trim()) return
     setLoading(true)
-    setResult(null)
-
-    try {
-      // const res = await fetch("/api/generate-config", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ prompt }),
-      // })
-      // const data = await res.json()
-      // setResult(JSON.stringify(data, null, 2))
-      // Mock result for demo
-      await new Promise((resolve) => setTimeout(resolve, 1500)) // Simulate network delay
-      const data = {
-        message: 'This is a mock config generated from your prompt.',
-        config: { Resources: '<AWS::S3::Bucket>', Properties: { BucketName: 'my-bucket' } },
-      }
-      setResult(JSON.stringify(data.message, null, 2))
-    } catch (err) {
-      console.error(err)
-      setResult('❌ Error generating config')
-    } finally {
-      setLoading(false)
+    setMessage('')
+    const res = await handleSuggestConfig(prompt, resourceType)
+    if (res.success) {
+      setMessage(res.message)
+      onApplyConfig(res.suggestions)
     }
+
+    setLoading(false)
   }
 
   return (
@@ -62,9 +60,9 @@ export default function PromptConfigBox() {
             'Generate Config'
           )}
         </Button>
-        {result && (
+        {message && (
           <div className="p-3 rounded-lg bg-secondary text-secondary-foreground text-sm">
-            {result}
+            {message}
           </div>
         )}
       </CardContent>
