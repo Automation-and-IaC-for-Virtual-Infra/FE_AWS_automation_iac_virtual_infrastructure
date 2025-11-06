@@ -7,6 +7,7 @@ export interface AwsServiceConnection {
 export interface AwsService {
   id: string
   _generatedId?: string
+  label?: string
   resourceType: string
   displayName: string
   requiredProps: string[]

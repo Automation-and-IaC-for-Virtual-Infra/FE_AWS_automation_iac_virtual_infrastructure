@@ -108,7 +108,7 @@ export default function Services({
                             <Activity className="w-5 h-5 text-blue-600 dark:text-blue-200" />
                           </Button>
                         ) : (
-                          <span className="text-gray-400 text-sm">No metrics</span>
+                          <span className="text-gray-400 text-sm">Unavailable</span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -155,9 +155,7 @@ export default function Services({
                       <TableCell>
                         {format(new Date(service.updated_at), 'dd/MM/yyyy HH:mm')}
                       </TableCell>
-                      <TableCell>
-                        <span className="text-gray-400 text-sm">No metrics</span>
-                      </TableCell>
+                      <TableCell></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

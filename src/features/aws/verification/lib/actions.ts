@@ -1,7 +1,7 @@
 'use server'
 
 import { AWS_API } from '@/constants/api'
-import { toFrontendUrl } from '@/utils/api'
+import { toFrontendUrl } from '@/utils/url'
 
 export async function verifyAwsCredentials(credentials: {
   accessKeyId: string

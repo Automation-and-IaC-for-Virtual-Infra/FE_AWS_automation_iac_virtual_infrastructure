@@ -1,7 +1,5 @@
 'use client'
 
-import { ChatBotModal } from '@/components/ChatBotModal'
-import { FloatingChatButton } from '@/components/FloatingChatButton'
 import PromptConfigBox from '@/components/PromptConfigBox'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,9 +9,8 @@ import {
   AwsServiceConnection,
   ListAwsServicesData,
 } from '@/features/aws/services/libs/types'
-import { useChatBot } from '@/hooks/useChatBot'
 import { formatCamelCase } from '@/utils/string.utils'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import ReactFlow, {
   Background,
   Connection,
@@ -22,6 +19,7 @@ import ReactFlow, {
   MarkerType,
   MiniMap,
   Node,
+  NodeTypes,
   ReactFlowInstance,
   addEdge,
   useEdgesState,
@@ -29,6 +27,11 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { toast } from 'sonner'
+import { GenerateInfra } from './components/GenerateInfra'
+import { PreviewTerraformModal } from './components/TerraformPreviewModal'
+import { handleApplySpec, handleGenTerraform } from './libs/actions'
+import { getTerraformBySessionId } from './libs/fetchers'
+import { mappingReactFlowToInfraData } from './libs/utils'
 
 const initialNodes: Node[] = []
 const initialEdges: Edge[] = []
@@ -42,22 +45,26 @@ const BORDER_NODE = {
 }
 
 const CONNECTION_COLORS = {
+  default: '#888',
   suggest: '#2563eb',
   required: '#ef4444',
   recommended: '#eab308',
   optional: '#22c55e',
 }
 
-export default function InfrastructureSetup({ result }: { result: ListAwsServicesData }) {
-  const { isOpen, setIsOpen, handleSendMessage } = useChatBot()
+const nodeTypes: NodeTypes = {}
 
+export default function InfrastructureSetup({ result }: { result: ListAwsServicesData }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<AwsService>(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
 
-  const [isFirstLoad, setIsFirstLoad] = useState(true)
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
   const [selectedNode, setSelectedNode] = useState<Node<AwsService> | null>(null)
   const [searchValue, setSearchValue] = useState('')
+  const [isShowGenerateInfra, setIsShowGenerateInfra] = useState(true)
+
+  const [promptNode, setPromptNode] = useState<string>('')
+  const [messagePromptNode, setMessagePromptNode] = useState<string>('')
 
   const [isConnecting, setIsConnecting] = useState(false)
   const [connectionStats, setConnectionStats] = useState({
@@ -65,6 +72,13 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     recommended: 0,
     optional: 0,
   })
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [sessionId, setSessionId] = useState<string>('')
+  const [showModalTerraform, setShowModalTerraform] = useState(false)
+  const [terraformFiles, setTerraformFiles] = useState<
+    { file_name: string; file_content: string }[]
+  >([])
 
   const filteredServices = useMemo(() => {
     if (!searchValue) return result.services
@@ -181,42 +195,45 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
       const { source, target } = params
       if (!source || !target) return
 
-      const sourceNode = nodes.find((n) => n.id === source)
-      const targetNode = nodes.find((n) => n.id === target)
+      // const sourceNode = nodes.find((n) => n.id === source)
+      // const targetNode = nodes.find((n) => n.id === target)
 
       // If node is not found or there is no connections configuration, do not allow connection
-      if (!sourceNode || !sourceNode.data?.connections) {
-        toast.error(`"${sourceNode?.data?.displayName}" cannot connect to any service.`)
-        return
-      }
+      // if (!sourceNode || !sourceNode.data?.connections) {
+      //   toast.error(`"${sourceNode?.data?.displayName}" cannot connect to any service.`)
+      //   return
+      // }
 
       // If connections does not include target node's service id, do not allow connection
-      const { requiredConnections, recommendedConnections, optionalConnections } =
-        sourceNode.data.connections
-      const listConnections = [
-        ...(requiredConnections || []),
-        ...(recommendedConnections || []),
-        ...(optionalConnections || []),
-      ]
+      // const { requiredConnections, recommendedConnections, optionalConnections } =
+      //   sourceNode.data.connections
+      // const listConnections = [
+      //   ...(requiredConnections || []),
+      //   ...(recommendedConnections || []),
+      //   ...(optionalConnections || []),
+      // ]
 
-      if (!targetNode?.data?.id || !listConnections.includes(targetNode?.data?.id)) {
-        toast.error(
-          `Cannot connect "${sourceNode.data.displayName}" to "${targetNode?.data?.displayName}".`
-        )
-        return
-      }
+      // if (!targetNode?.data?.id || !listConnections.includes(targetNode?.data?.id)) {
+      //   toast.error(
+      //     `Cannot connect "${sourceNode.data.displayName}" to "${targetNode?.data?.displayName}".`
+      //   )
+      //   return
+      // }
 
       setEdges((eds) =>
         addEdge(
           {
             ...params,
             markerEnd: { type: MarkerType.ArrowClosed, width: 24, height: 24 },
+            type: 'smoothstep',
+            animated: true,
+            style: { stroke: CONNECTION_COLORS.default },
           },
           eds
         )
       )
     },
-    [setEdges, nodes]
+    [setEdges]
   )
 
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
@@ -245,8 +262,8 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
         type: 'default',
         position,
         data: {
-          label: service.displayName,
           ...service,
+          label: service.displayName,
         },
         style: {
           border: BORDER_NODE.selected,
@@ -270,6 +287,8 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
       )
 
       setSelectedNode(newNode)
+      setPromptNode('')
+      setMessagePromptNode('')
     },
     [reactFlowInstance, result.services, setNodes]
   )
@@ -291,6 +310,8 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
       }))
     )
     setSelectedNode(node)
+    setPromptNode('')
+    setMessagePromptNode('')
   }
 
   const handleConfigChange = (key: string, value: string | boolean) => {
@@ -318,19 +339,30 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     setSelectedNode(updatedNodes[nodeIndex])
   }
 
-  const exportConfig = () => {
+  const generateTerraform = async () => {
     const payload = { nodes, edges }
-    console.log('Send to BE:', payload)
-    // fetch("/api/deploy", { method: "POST", body: JSON.stringify(payload) })
-  }
+    const res = await handleApplySpec(sessionId, mappingReactFlowToInfraData(payload))
+    if (res.status === 'ok') {
+      const resGenTf = await handleGenTerraform(sessionId)
+      if (resGenTf?.success) {
+        setIsLoading(true)
+        setShowModalTerraform(true)
 
-  const handleChatMessage = async (message: string) => {
-    const response = await handleSendMessage(message)
-    return response // Return response to ChatBotModal
+        const resGetTf = await getTerraformBySessionId(sessionId)
+        setTerraformFiles(resGetTf.files || [])
+        if (resGetTf.message) {
+          toast.success(resGetTf.message)
+        }
+
+        setIsLoading(false)
+      }
+    }
   }
 
   const handleUnselectNode = () => {
     setSelectedNode(null)
+    setPromptNode('')
+    setMessagePromptNode('')
     setNodes((nds) =>
       nds.map((n) => ({
         ...n,
@@ -344,87 +376,71 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
   }
 
   const handleApplySuggestion = useCallback(
-    (suggestion: any) => {
-      if (!suggestion || !reactFlowInstance) return
+    (
+      { nodes: incomingNodes, edges: incomingEdges }: { nodes: Node[]; edges: Edge[] },
+      session_id: string
+    ) => {
+      if (!session_id || !incomingNodes || !reactFlowInstance) return
+
+      setSessionId(session_id)
 
       try {
-        const newNodes: Node[] = []
-        const newEdges: Edge[] = []
+        // Map incoming nodes with full service data from result.services
+        const mappedNodes = incomingNodes.map((node) => {
+          const service = result.services.find((s) => s.resourceType === node.data?.resourceType)
 
-        // Add services as nodes
-        suggestion.services?.forEach((serviceId: string, index: number) => {
-          const service = result.services.find((s) => s.id === serviceId)
-          if (!service) return
+          if (!service) {
+            console.warn(`Service not found for node:`, node)
+            return node
+          }
 
-          const position = reactFlowInstance.project({
-            x: 100 + (index % 3) * 250,
-            y: 100 + Math.floor(index / 3) * 150,
-          })
-
-          const nodeId = `${Date.now()}-${serviceId}-${index}`
-          newNodes.push({
-            id: nodeId,
+          return {
+            ...node,
             type: 'default',
-            position,
             data: {
-              label: service.displayName,
               ...service,
-              _generatedId: serviceId, // Track original service ID
+              ...node.data,
+              label: service.displayName,
+              displayName: service.displayName,
+              requiredProps: service.requiredProps || [],
+              connections: service.connections || {
+                requiredConnections: [],
+                recommendedConnections: [],
+                optionalConnections: [],
+              },
+              // Merge properties from service and incoming node
+              properties: {
+                ...service.properties,
+                ...node.data?.properties,
+              },
             },
             style: {
+              ...node.style,
               border: BORDER_NODE.default,
               borderRadius: '8px',
             },
-          })
+          }
         })
 
-        setNodes(newNodes)
+        // Map edges with proper styling
+        const mappedEdges = incomingEdges.map((edge) => ({
+          ...edge,
+          markerEnd: { type: MarkerType.ArrowClosed, width: 24, height: 24 },
+          style: {
+            ...edge.style,
+            stroke: CONNECTION_COLORS.suggest,
+          },
+        }))
 
-        // Add connections as edges
+        setNodes(mappedNodes)
+        setEdges(mappedEdges)
+
+        toast.success('Infrastructure applied successfully!')
+
+        // Fit view to show all nodes
         setTimeout(() => {
-          suggestion.connections?.forEach((conn: any) => {
-            const sourceNode = newNodes.find((n) => n.data._generatedId === conn.source)
-            const targetNode = newNodes.find((n) => n.data._generatedId === conn.target)
-
-            if (sourceNode && targetNode) {
-              newEdges.push({
-                id: `${sourceNode.id}-${targetNode.id}`,
-                source: sourceNode.id,
-                target: targetNode.id,
-                markerEnd: { type: MarkerType.ArrowClosed, width: 24, height: 24 },
-                style: { stroke: CONNECTION_COLORS.suggest },
-              })
-            }
-          })
-
-          setEdges((eds) => [...eds, ...newEdges])
+          reactFlowInstance?.fitView({ padding: 0.2 })
         }, 100)
-
-        // Apply configs to nodes
-        if (suggestion.configs) {
-          setTimeout(() => {
-            setNodes((nds) =>
-              nds.map((node) => {
-                const serviceId = node.data._generatedId
-                if (serviceId && suggestion.configs[serviceId]) {
-                  return {
-                    ...node,
-                    data: {
-                      ...node.data,
-                      properties: {
-                        ...node.data.properties,
-                        ...suggestion.configs[serviceId],
-                      },
-                    },
-                  }
-                }
-                return node
-              })
-            )
-          }, 200)
-        }
-
-        toast.success('Infrastructure suggestion applied successfully!')
       } catch (error) {
         console.error('Error applying suggestion:', error)
         toast.error('Failed to apply infrastructure suggestion')
@@ -433,31 +449,55 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     [reactFlowInstance, result.services, setNodes, setEdges]
   )
 
-  useEffect(() => {
-    // TODO: if clear new infra, show modal is default
-    if (nodes.length === 0) {
-      setIsOpen(true)
-    }
+  const handleApplyConfig = (config: { [key: string]: { value: any; type: string } }) => {
+    if (!selectedNode) return
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    console.log('Applying config to node:', selectedNode.id, config)
+
+    const updatedNodes = [...nodes]
+    const nodeIndex = updatedNodes.findIndex((n) => n.id === selectedNode?.id)
+    if (nodeIndex === -1) return
+
+    const currentProperties = updatedNodes[nodeIndex].data.properties || {}
+    const newProperties = { ...currentProperties }
+
+    Object.entries(config).forEach(([key, { value }]) => {
+      newProperties[key] = {
+        ...newProperties[key],
+        value,
+      }
+    })
+
+    updatedNodes[nodeIndex] = {
+      ...updatedNodes[nodeIndex],
+      data: {
+        ...updatedNodes[nodeIndex].data,
+        properties: newProperties,
+      },
+    }
+    setNodes(updatedNodes)
+    setSelectedNode(updatedNodes[nodeIndex])
+  }
 
   return (
     <>
-      <FloatingChatButton isOpen={isOpen} onToggle={() => setIsOpen(!isOpen)} />
-      <ChatBotModal
-        isOpen={isOpen}
+      <GenerateInfra
+        isOpen={isShowGenerateInfra}
         onClose={() => {
-          if (isFirstLoad) {
-            setIsFirstLoad(false)
-          }
-
-          setIsOpen(false)
+          setIsShowGenerateInfra(false)
         }}
-        onSendMessage={handleChatMessage}
         onApplySuggestion={handleApplySuggestion}
-        fullWidth={isFirstLoad}
       />
+
+      {showModalTerraform && (
+        <PreviewTerraformModal
+          open={showModalTerraform}
+          onClose={() => setShowModalTerraform(false)}
+          sessionId={sessionId}
+          files={terraformFiles}
+          loading={isLoading}
+        />
+      )}
 
       <div className="flex text-black h-[calc(100vh-64px)] overflow-hidden">
         {/* Sidebar */}
@@ -482,8 +522,8 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
               </div>
             ))}
           </div>
-          <Button onClick={exportConfig} className="w-full py-2 bg-green-500">
-            Deploy
+          <Button onClick={generateTerraform} className="w-full py-2 bg-green-500">
+            Generate Terraform
           </Button>
         </div>
 
@@ -531,6 +571,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
             onDrop={onDrop}
             onDragOver={onDragOver}
             onNodeClick={handleNodeClick}
+            nodeTypes={nodeTypes}
             fitView
             proOptions={{ hideAttribution: true }}
             className="bg-black"
@@ -558,7 +599,14 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
               </button>
             </div>
             <div className="mb-2">
-              <PromptConfigBox />
+              <PromptConfigBox
+                prompt={promptNode}
+                setPrompt={setPromptNode}
+                message={messagePromptNode}
+                setMessage={setMessagePromptNode}
+                resourceType={selectedNode.data.resourceType}
+                onApplyConfig={handleApplyConfig}
+              />
             </div>
             {selectedNode?.data?.properties && (
               <div className="flex-1 overflow-y-auto px-2">

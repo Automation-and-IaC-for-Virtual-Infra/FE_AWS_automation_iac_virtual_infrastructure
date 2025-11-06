@@ -2,7 +2,7 @@
 
 import { AWS_API } from '@/constants/api'
 import { ApiResponse, createErrorResponse } from '@/types/api'
-import { toFrontendUrl } from '@/utils/api'
+import { toFrontendUrl } from '@/utils/url'
 import { ListAwsServicesData } from './types'
 
 export const getAwsServices = async () => {
