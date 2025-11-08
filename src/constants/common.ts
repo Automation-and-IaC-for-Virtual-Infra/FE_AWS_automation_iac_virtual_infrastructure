@@ -29,3 +29,13 @@ export const NOTIFICATION_OPTIONS = [
   { label: 'Apply Error', value: NOTIFICATION_TYPES_ENUM.APPLY_ERROR.toString() },
   { label: 'Need Approval', value: NOTIFICATION_TYPES_ENUM.NEED_APPROVAL.toString() },
 ]
+
+export const SERVICE_STATUS = {
+  RUNNING: 1,
+  DELETED: 2,
+}
+
+export const LOCALSTORAGE_KEYS = {
+  IS_DEPLOYING: 'isDeploying',
+  CREATED_AT_DEPLOYMENT: 'createdAtDeployment',
+}

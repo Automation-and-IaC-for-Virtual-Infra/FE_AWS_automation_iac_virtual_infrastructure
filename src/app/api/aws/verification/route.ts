@@ -3,10 +3,9 @@ import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   try {
-    const { accessKeyId, secretAccessKey, region } = await req.json()
+    const { accessKeyId, secretAccessKey } = await req.json()
 
     const sts = new STSClient({
-      region,
       credentials: { accessKeyId, secretAccessKey },
     })
 

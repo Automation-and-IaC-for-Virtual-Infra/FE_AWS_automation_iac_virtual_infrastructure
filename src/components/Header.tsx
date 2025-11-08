@@ -104,14 +104,26 @@ export default function Header() {
           <DropdownMenuContent className="w-48" align="end">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/settings">Settings</Link>
+            <DropdownMenuItem asChild disabled>
+              <div className="flex justify-between">
+                <Link href="/settings">Settings</Link>
+                <span className="text-xs text-gray-400 italic">Coming soon</span>
+              </div>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/profile">Profile</Link>
+            <DropdownMenuItem asChild disabled>
+              <div className="flex justify-between">
+                <Link href="/profile">Profile</Link>
+                <span className="text-xs text-gray-400 italic">Coming soon</span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="cursor-pointer hover:bg-gray-100">
+              <Link href={ROUTES.AWS_VERIFICATION}>Aws Connections</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-500 cursor-pointer" onClick={handleSignOut}>
+            <DropdownMenuItem
+              className="text-red-500 cursor-pointer hover:bg-gray-100"
+              onClick={handleSignOut}
+            >
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -1,7 +1,6 @@
 'use server'
 
 import { COMMON_API } from '@/constants/api'
-import { ENV } from '@/constants/env'
 import { apiBERequest } from '@/utils/api'
 import { InfraData } from './types'
 
@@ -48,13 +47,9 @@ export const handleGenTerraform = async (session_id: string) => {
 
 export const handlePushToRepository = async (session_id: string) => {
   const res = await apiBERequest({
-    path: COMMON_API.GIT_PUSH,
+    path: `${COMMON_API.PUSH_TERRA}?session_id=${session_id}`,
     options: {
       method: 'POST',
-      body: JSON.stringify({
-        session_id,
-        github_pat: ENV.GITHUB_PAT,
-      }),
     },
   })
   return res
