@@ -1,3 +1,5 @@
+import Dashboard from '@/features/dashboard/Dashboard'
+
 export default function HomePage() {
-  return <div>Home Page</div>
+  return <Dashboard />
 }
