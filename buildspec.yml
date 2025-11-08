@@ -11,8 +11,9 @@ phases:
     commands:
       - echo "📦 Installing dependencies..."
       - npm ci
-      - apt update -y
-      - apt install -y zip openssh-client
+      - set -eo pipefail
+      - yum -y update || true
+      - yum -y install yum-utils jq zip openssh-client || true
 
   build:
     commands:
