@@ -1,5 +1,6 @@
 'use client'
 
+import LoadingContent from '@/components/LoadingContent'
 import PromptConfigBox from '@/components/PromptConfigBox'
 import { TagsInput } from '@/components/TagsInput'
 import { Button } from '@/components/ui/button'
@@ -10,8 +11,9 @@ import {
   AwsServiceConnection,
   ListAwsServicesData,
 } from '@/features/aws/services/libs/types'
+import { isExpiredDeployment } from '@/utils/storage'
 import { formatCamelCase } from '@/utils/string.utils'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import ReactFlow, {
   Background,
   Connection,
@@ -32,7 +34,8 @@ import { GenerateInfra } from './components/GenerateInfra'
 import { PreviewTerraformModal } from './components/TerraformPreviewModal'
 import { handleApplySpec, handleGenTerraform } from './libs/actions'
 import { getTerraformBySessionId } from './libs/fetchers'
-import { mappingReactFlowToInfraData } from './libs/utils'
+import { InfraData } from './libs/types'
+import { mappingInfraDataToReactFlow, mappingReactFlowToInfraData } from './libs/utils'
 
 const initialNodes: Node[] = []
 const initialEdges: Edge[] = []
@@ -55,7 +58,17 @@ const CONNECTION_COLORS = {
 
 const nodeTypes: NodeTypes = {}
 
-export default function InfrastructureSetup({ result }: { result: ListAwsServicesData }) {
+export default function InfrastructureSetup({
+  result,
+  session_id,
+  spec_json,
+}: {
+  result: ListAwsServicesData
+  session_id?: string
+  spec_json?: InfraData
+}) {
+  const isDeploying = useMemo(() => isExpiredDeployment(), [])
+
   const [nodes, setNodes, onNodesChange] = useNodesState<AwsService>(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
 
@@ -75,6 +88,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
   })
 
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingPage, setIsLoadingPage] = useState(true)
   const [sessionId, setSessionId] = useState<string>('')
   const [showModalTerraform, setShowModalTerraform] = useState(false)
   const [terraformFiles, setTerraformFiles] = useState<
@@ -481,53 +495,73 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
     setSelectedNode(updatedNodes[nodeIndex])
   }
 
+  useEffect(() => {
+    if (spec_json && session_id) {
+      handleApplySuggestion(mappingInfraDataToReactFlow(spec_json), session_id)
+      setIsShowGenerateInfra(false)
+    }
+
+    setIsLoadingPage(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session_id, spec_json])
+
+  if (isLoadingPage) {
+    return <LoadingContent loading={isLoadingPage}> </LoadingContent>
+  }
+
   return (
     <>
-      <GenerateInfra
-        isOpen={isShowGenerateInfra}
-        onClose={() => {
-          setIsShowGenerateInfra(false)
-        }}
-        onApplySuggestion={handleApplySuggestion}
-      />
+      {!isDeploying && (
+        <>
+          <GenerateInfra
+            isOpen={isShowGenerateInfra}
+            onClose={() => {
+              setIsShowGenerateInfra(false)
+            }}
+            onApplySuggestion={handleApplySuggestion}
+          />
 
-      {showModalTerraform && (
-        <PreviewTerraformModal
-          open={showModalTerraform}
-          onClose={() => setShowModalTerraform(false)}
-          sessionId={sessionId}
-          files={terraformFiles}
-          loading={isLoading}
-        />
+          {showModalTerraform && (
+            <PreviewTerraformModal
+              open={showModalTerraform}
+              onClose={() => setShowModalTerraform(false)}
+              sessionId={sessionId}
+              files={terraformFiles}
+              loading={isLoading}
+            />
+          )}
+        </>
       )}
 
       <div className="flex text-black h-[calc(100vh-64px)] overflow-hidden">
         {/* Sidebar */}
-        <div className="flex flex-col gap-2 min-w-64 bg-gray-100 p-3 border-r">
-          <h2 className="font-bold">AWS Services</h2>
-          <Input
-            className="rounded-sm"
-            placeholder="Search AWS Services"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-          />
+        {!isDeploying && (
+          <div className="flex flex-col gap-2 min-w-64 bg-gray-100 p-3 border-r">
+            <h2 className="font-bold">AWS Services</h2>
+            <Input
+              className="rounded-sm"
+              placeholder="Search AWS Services"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+            />
 
-          <div className="overflow-y-auto flex-1">
-            {filteredServices.map((svc) => (
-              <div
-                key={svc.id}
-                className="p-2 bg-white border rounded mb-2 cursor-move hover:bg-gray-200"
-                draggable
-                onDragStart={(e) => onDragStart(e, svc.id)}
-              >
-                {svc.displayName}
-              </div>
-            ))}
+            <div className="overflow-y-auto flex-1">
+              {filteredServices.map((svc) => (
+                <div
+                  key={svc.id}
+                  className="p-2 bg-white border rounded mb-2 cursor-move hover:bg-gray-200"
+                  draggable
+                  onDragStart={(e) => onDragStart(e, svc.id)}
+                >
+                  {svc.displayName}
+                </div>
+              ))}
+            </div>
+            <Button onClick={generateTerraform} className="w-full py-2 bg-green-500">
+              Generate Terraform
+            </Button>
           </div>
-          <Button onClick={generateTerraform} className="w-full py-2 bg-green-500">
-            Generate Terraform
-          </Button>
-        </div>
+        )}
 
         {/* React Flow Canvas */}
         <div className="flex-1 relative">
@@ -634,12 +668,14 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
                         <TagsInput
                           value={value || []}
                           onChange={(tags) => handleConfigChange(cfgKey, tags)}
+                          disabled={isDeploying}
                         />
                       ) : /* Boolean - Switch */
                       isBoolean ? (
                         <Switch
                           checked={!!value}
                           onCheckedChange={(checked) => handleConfigChange(cfgKey, checked)}
+                          disabled={isDeploying}
                         />
                       ) : /* Array - JSON Editor */
                       isArray ? (
@@ -656,6 +692,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
                             }}
                             className="w-full min-h-[100px] p-2 border border-gray-400 rounded font-mono text-xs"
                             placeholder="Enter JSON array"
+                            disabled={isDeploying}
                           />
                         </div>
                       ) : /* Object - JSON Editor */
@@ -673,6 +710,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
                             }}
                             className="w-full min-h-[100px] p-2 border border-gray-400 rounded font-mono text-xs"
                             placeholder="Enter JSON object"
+                            disabled={isDeploying}
                           />
                         </div>
                       ) : (
@@ -695,6 +733,7 @@ export default function InfrastructureSetup({ result }: { result: ListAwsService
                               : 'text'
                           }
                           className="w-full border border-gray-400"
+                          disabled={isDeploying}
                         />
                       )}
                     </div>

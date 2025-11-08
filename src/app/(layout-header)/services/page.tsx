@@ -1,4 +1,5 @@
-import { fetchMetrics, fetchServices } from '@/features/aws/metrics/libs/fetchers'
+import { fetchMetrics } from '@/features/aws/metrics/libs/fetchers'
+import { fetchServices } from '@/features/aws/services/libs/fetchers'
 import { filterServicesHasMetrics } from '@/features/aws/services/libs/utils'
 import Services from '@/features/aws/services/Services'
 

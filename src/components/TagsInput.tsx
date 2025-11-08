@@ -14,9 +14,10 @@ export interface Tag {
 interface TagsInputProps {
   value: Tag[]
   onChange: (tags: Tag[]) => void
+  disabled?: boolean
 }
 
-export function TagsInput({ value = [], onChange }: TagsInputProps) {
+export function TagsInput({ value = [], onChange, disabled }: TagsInputProps) {
   const [tags, setTags] = useState<Tag[]>(
     Array.isArray(value) && value.length > 0 ? value : [{ Key: '', Value: '' }]
   )
@@ -49,35 +50,35 @@ export function TagsInput({ value = [], onChange }: TagsInputProps) {
               value={tag.Key}
               onChange={(e) => handleTagChange(index, 'Key', e.target.value)}
               className="text-sm"
+              disabled={disabled}
             />
             <Input
               placeholder="Value (e.g., Production)"
               value={tag.Value}
               onChange={(e) => handleTagChange(index, 'Value', e.target.value)}
               className="text-sm"
+              disabled={disabled}
             />
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => handleRemoveTag(index)}
-            className="mt-1 text-red-500 hover:text-red-700 hover:bg-red-50"
-          >
-            <X className="w-4 h-4" />
-          </Button>
+          {!disabled && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => handleRemoveTag(index)}
+              className="mt-1 text-red-500 hover:text-red-700 hover:bg-red-50"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       ))}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={handleAddTag}
-        className="w-full gap-2"
-      >
-        <Plus className="w-4 h-4" />
-        Add Tag
-      </Button>
+      {!disabled && (
+        <Button type="button" variant="outline" size="sm" onClick={handleAddTag}>
+          <Plus className="w-4 h-4" />
+          Add Tag
+        </Button>
+      )}
     </div>
   )
 }

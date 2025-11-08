@@ -44,6 +44,7 @@ const statusConfig = {
 
 export default function NotificationItem({ item }: { item: NotificationData }) {
   const [isRead, setIsRead] = useState(item.is_read)
+  const [approveLink, setApproveLink] = useState('')
 
   const config = statusConfig[item.type as NOTIFICATION_TYPES_ENUM] || {
     badge: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -70,21 +71,8 @@ export default function NotificationItem({ item }: { item: NotificationData }) {
         if (index === 3) return null // Skip token line
         if (index === 4) {
           const link = line.replace('Approval Link:', '').trim()
-          return (
-            <div key={index} className="flex items-center gap-2 mt-1">
-              <span>Approval Link: </span>
-              <a
-                href={link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-700 hover:underline flex gap-1 items-center"
-                onClick={onMarkAsRead}
-              >
-                <ExternalLink className="w-3 h-3" />
-                Link
-              </a>
-            </div>
-          )
+          setApproveLink(link)
+          return
         }
 
         return (
@@ -100,7 +88,7 @@ export default function NotificationItem({ item }: { item: NotificationData }) {
         {line}
       </p>
     ))
-  }, [item.content, item.type, onMarkAsRead])
+  }, [item.content, item.type])
 
   return (
     <Card
@@ -149,20 +137,23 @@ export default function NotificationItem({ item }: { item: NotificationData }) {
           </div>
 
           {/* View Details Button */}
-          {item?.detail_link && (
+          {(approveLink || item?.detail_link) && (
             <Button
               variant="ghost"
               size="sm"
               asChild
               className={cx(
-                'shrink-0 text-blue-600 hover:text-blue-700',
-                isRead ? 'hover:bg-blue-50 dark:hover:bg-blue-100' : 'hover:bg-blue-200'
+                'shrink-0',
+                approveLink
+                  ? 'text-orange-600 hover:text-orange-700'
+                  : 'text-blue-600 hover:text-blue-700',
+                isRead ? 'hover:bg-blue-50' : 'hover:bg-blue-200'
               )}
               onClick={onMarkAsRead}
             >
               <a href={item.detail_link} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4 mr-1" />
-                View log
+                {approveLink ? 'Approve now' : 'View log'}
               </a>
             </Button>
           )}

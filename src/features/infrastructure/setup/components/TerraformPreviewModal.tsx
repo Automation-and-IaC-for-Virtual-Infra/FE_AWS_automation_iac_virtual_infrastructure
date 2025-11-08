@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { LOCALSTORAGE_KEYS } from '@/constants/common'
 import Editor from '@monaco-editor/react'
 import { DialogTitle } from '@radix-ui/react-dialog'
 import { Github, Sparkles } from 'lucide-react'
@@ -96,8 +97,9 @@ export function PreviewTerraformModal({
     setIsLoading(true)
     console.log('Pushing Terraform configuration to repository...')
     const res = await handlePushToRepository(sessionId)
-    console.log('🚀 ~ onPushToRepo ~ res:', res)
     if (res.success) {
+      localStorage.setItem(LOCALSTORAGE_KEYS.IS_DEPLOYING, 'true')
+      localStorage.setItem(LOCALSTORAGE_KEYS.CREATED_AT_DEPLOYMENT, new Date().toISOString())
       setIsLoading(false)
       toast.success('Successfully pushed to repository!')
       onClose()

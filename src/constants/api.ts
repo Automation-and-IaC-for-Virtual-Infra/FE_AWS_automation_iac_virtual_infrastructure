@@ -12,19 +12,27 @@ export const AWS_API = {
 }
 
 export const COMMON_API = {
+  GET_SESSION_NEWEST: '/get_newest_session',
+
   CHAT: '/chat',
   GENERATE_SPEC: '/generate_spec',
   APPLY_SPEC: '/apply_spec',
+  GET_SPEC: '/get_spec',
 
   SUGGEST_CONFIG: '/suggest_config',
 
   GEN_TF: '/gen_tf',
   GET_TF: '/get_tf',
   FIX_TF: '/fix_tf',
+  PUSH_TERRA: '/push_terra',
 
-  GIT_PUSH: '/git_push',
+  // GIT_PUSH: '/git_push',
 
   LIST_SERVICES: '/list_services',
   NOTIFICATIONS: '/notifications',
   READ_NOTI: '/read_noti',
+}
+
+export const COMMON_API_2 = {
+  AWS_CONNECTION: '/dev/aws/connection',
 }

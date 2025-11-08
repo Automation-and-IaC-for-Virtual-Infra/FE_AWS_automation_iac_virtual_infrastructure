@@ -11,10 +11,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { SERVICE_STATUS } from '@/constants/common'
+import { isExpiredDeployment } from '@/utils/storage'
 import { format } from 'date-fns'
 import { Activity, Server, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import MetricModal from './components/MetricModal'
+import { fetchServices } from './libs/fetchers'
 import { ServiceData } from './libs/types'
 
 type MetricResult = {
@@ -30,15 +33,20 @@ export default function Services({
   services: ServiceData[]
   metrics: MetricResult[]
 }) {
+  const isDeploying = useMemo(() => isExpiredDeployment(), [])
+
+  const [servicesData, setServicesData] = useState<ServiceData[]>(services)
+  const [isLoading, setIsLoading] = useState(false)
+
   const [selectedService, setSelectedService] = useState<ServiceData | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const { runningServices, deletedServices } = useMemo(() => {
     return {
-      runningServices: services.filter((s) => s.status === 1),
-      deletedServices: services.filter((s) => s.status === 2),
+      runningServices: servicesData.filter((s) => s.status === SERVICE_STATUS.RUNNING),
+      deletedServices: servicesData.filter((s) => s.status === SERVICE_STATUS.DELETED),
     }
-  }, [services])
+  }, [servicesData])
 
   const getMetricsForService = (serviceId: string) => {
     return metrics?.filter((m) => m.Label.includes(serviceId))
@@ -58,6 +66,15 @@ export default function Services({
     setSelectedService(null)
   }
 
+  const handleReloadData = async () => {
+    setIsLoading(true)
+    const res = await fetchServices()
+    if (res && res.items) {
+      setServicesData(res.items)
+    }
+    setIsLoading(false)
+  }
+
   return (
     <>
       <div className="p-6 space-y-6">
@@ -74,7 +91,56 @@ export default function Services({
           </CardHeader>
           <CardContent>
             {runningServices.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">No running services</div>
+              <div className="text-center text-gray-500 py-8 flex justify-center">
+                {isDeploying ? (
+                  <div className="flex flex-col items-center gap-6 max-w-md text-center">
+                    {/* Animated Spinner */}
+                    <div className="relative">
+                      <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Server className="w-8 h-8 text-blue-600 animate-pulse" />
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                        Deploying Infrastructure
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Your services are being provisioned. This may take a few minutes...
+                      </p>
+                    </div>
+
+                    {/* Refresh Button */}
+                    <Button
+                      variant="outline"
+                      onClick={handleReloadData}
+                      disabled={isLoading}
+                      className="gap-2 min-w-[140px]"
+                    >
+                      {isLoading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                          <span>Refreshing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Activity className="w-4 h-4" />
+                          <span>Refresh Status</span>
+                        </>
+                      )}
+                    </Button>
+
+                    {/* Estimated Time */}
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      Estimated time: 3-5 minutes
+                    </p>
+                  </div>
+                ) : (
+                  <p>No running services</p>
+                )}
+              </div>
             ) : (
               <Table>
                 <TableHeader>
