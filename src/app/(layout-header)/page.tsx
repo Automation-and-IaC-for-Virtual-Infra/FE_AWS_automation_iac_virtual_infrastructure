@@ -3,6 +3,8 @@ import Dashboard from '@/features/dashboard/Dashboard'
 import { fetchEstCostMonthly } from '@/features/dashboard/libs/fetchers'
 import { getSessionNewest } from '@/features/infrastructure/setup/libs/fetchers'
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const resNewestSession = await getSessionNewest()
   let estCostData = null

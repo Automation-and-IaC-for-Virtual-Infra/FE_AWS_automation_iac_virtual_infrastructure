@@ -19,8 +19,6 @@ export function mappingReactFlowToInfraData(flowData: {
       for (const [key, prop] of Object.entries(data.properties)) {
         if (prop && typeof prop === 'object' && 'value' in prop) {
           properties[key] = prop.value
-        } else {
-          properties[key] = prop
         }
       }
     }

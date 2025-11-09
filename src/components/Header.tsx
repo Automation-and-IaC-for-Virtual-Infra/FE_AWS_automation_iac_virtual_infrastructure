@@ -43,7 +43,7 @@ export default function Header() {
       {/* Logo */}
       <div className="font-bold text-xl text-blue-600">
         <Link href="/">
-          <Image src="logo-cropped.svg" alt="AWS Flow Logo" width={100} height={400} priority />
+          <Image src="/logo-cropped.svg" alt="AWS Flow Logo" width={100} height={400} priority />
         </Link>
       </div>
 

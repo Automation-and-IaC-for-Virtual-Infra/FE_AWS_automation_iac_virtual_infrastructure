@@ -1,6 +1,7 @@
 'use server'
 
 import { AWS_API, COMMON_API_2 } from '@/constants/api'
+import { LIST_AWS_CONNECTION_KEYS } from '@/constants/common'
 import { apiBE2Request } from '@/utils/api'
 import { toFrontendUrl } from '@/utils/url'
 
@@ -18,11 +19,9 @@ export async function verifyAwsCredentials(credentials: {
   return response.json()
 }
 
-const LIST_KEYS = ['access-key', 'private-key', 'region', 'ssh-public-key', 'ssh-private-key']
-
 export async function checkAlreadyVerified() {
   const res = await Promise.all(
-    LIST_KEYS.map(async (key) => {
+    LIST_AWS_CONNECTION_KEYS.map(async (key) => {
       const res = await apiBE2Request({
         path: `${COMMON_API_2.AWS_CONNECTION}?parameterName=${key}`,
       })

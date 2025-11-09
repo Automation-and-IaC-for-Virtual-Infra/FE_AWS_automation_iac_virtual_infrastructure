@@ -1,6 +1,10 @@
 import { LOCALSTORAGE_KEYS } from '@/constants/common'
 
 export const isExpiredDeployment = (): boolean => {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
   const createdAt = localStorage.getItem(LOCALSTORAGE_KEYS.CREATED_AT_DEPLOYMENT)
   if (!createdAt) return false
 

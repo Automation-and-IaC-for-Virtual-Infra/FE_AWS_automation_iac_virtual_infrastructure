@@ -118,8 +118,8 @@ export const apiBE2Request = async ({
   }
 
   const response = await fetch(url, options)
-  if (!response.ok) {
-    throw new Error('Failed to fetch API')
-  }
+  // if (!response.ok) {
+  //   throw new Error('Failed to fetch API')
+  // }
   return await response.json()
 }

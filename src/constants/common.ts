@@ -39,3 +39,11 @@ export const LOCALSTORAGE_KEYS = {
   IS_DEPLOYING: 'isDeploying',
   CREATED_AT_DEPLOYMENT: 'createdAtDeployment',
 }
+
+export const LIST_AWS_CONNECTION_KEYS = [
+  'access-key',
+  'private-key',
+  'region',
+  'ssh-public-key',
+  'ssh-private-key',
+]

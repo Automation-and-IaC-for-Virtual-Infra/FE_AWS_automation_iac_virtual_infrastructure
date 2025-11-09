@@ -1,9 +1,11 @@
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { LOCALSTORAGE_KEYS } from '@/constants/common'
+import { ROUTES } from '@/constants/route'
 import Editor from '@monaco-editor/react'
 import { DialogTitle } from '@radix-ui/react-dialog'
 import { Github, Sparkles } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { handlePushToRepository } from '../libs/actions'
@@ -26,6 +28,8 @@ export function PreviewTerraformModal({
   files: TerraformFile[]
   loading?: boolean
 }) {
+  const router = useRouter()
+
   const [isLoading, setIsLoading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<TerraformFile | null>(null)
   const [code, setCode] = useState<string | null>(null)
@@ -102,7 +106,7 @@ export function PreviewTerraformModal({
       localStorage.setItem(LOCALSTORAGE_KEYS.CREATED_AT_DEPLOYMENT, new Date().toISOString())
       setIsLoading(false)
       toast.success('Successfully pushed to repository!')
-      onClose()
+      router.push(ROUTES.SERVICES)
     }
   }
 

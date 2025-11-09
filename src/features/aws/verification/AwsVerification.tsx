@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { LIST_AWS_CONNECTION_KEYS } from '@/constants/common'
 import { ROUTES } from '@/constants/route'
 import { cx } from 'class-variance-authority'
 import { CheckCircle, Loader2, ShieldCheck, XCircle } from 'lucide-react'
@@ -53,11 +54,11 @@ export function AwsVerification() {
     let resultData = resVerify
     if (resVerify.success) {
       const resStoreConnections = await updateAwsConnection([
-        { name: 'access-key', value: values.accessKeyId },
-        { name: 'private-key', value: values.secretAccessKey },
-        { name: 'region', value: values.region },
-        { name: 'ssh-public-key', value: values.sshPublicKey },
-        { name: 'ssh-private-key', value: values.sshPrivateKey },
+        { name: LIST_AWS_CONNECTION_KEYS[0], value: values.accessKeyId },
+        { name: LIST_AWS_CONNECTION_KEYS[1], value: values.secretAccessKey },
+        { name: LIST_AWS_CONNECTION_KEYS[2], value: values.region },
+        { name: LIST_AWS_CONNECTION_KEYS[3], value: values.sshPublicKey },
+        { name: LIST_AWS_CONNECTION_KEYS[4], value: values.sshPrivateKey },
       ])
       if (resStoreConnections.success) {
         setShowSuccess(true)
@@ -167,7 +168,6 @@ export function AwsVerification() {
               <Input
                 placeholder="AWS Secret Access Key"
                 name="secretAccessKey"
-                type="password"
                 value={values.secretAccessKey}
                 onChange={handleChange}
                 required
@@ -200,6 +200,13 @@ export function AwsVerification() {
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Verify'}
               </Button>
             </form>
+
+            <Button
+              onClick={handleGoHome}
+              className="w-full bg-green-600 hover:bg-green-700 text-white gap-2 mt-2"
+            >
+              Go Home
+            </Button>
 
             {result && (
               <Alert
