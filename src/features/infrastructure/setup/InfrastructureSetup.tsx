@@ -12,7 +12,7 @@ import {
   ListAwsServicesData,
 } from '@/features/aws/services/libs/types'
 import { isExpiredDeployment } from '@/utils/storage'
-import { formatCamelCase } from '@/utils/string.utils'
+import { formatCamelCase } from '@/utils/string'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import ReactFlow, {
   Background,

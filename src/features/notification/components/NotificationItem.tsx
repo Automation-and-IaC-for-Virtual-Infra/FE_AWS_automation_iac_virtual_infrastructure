@@ -6,6 +6,7 @@ import { cx } from 'class-variance-authority'
 import { format } from 'date-fns'
 import { CheckCircle2, Clock, ExternalLink, XCircle } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
+import { useNotifications } from '../context/NotificationContext'
 import { handleMarkAsRead } from '../libs/actions'
 import { NotificationData } from '../libs/types'
 
@@ -42,7 +43,15 @@ const statusConfig = {
   },
 }
 
-export default function NotificationItem({ item }: { item: NotificationData }) {
+export default function NotificationItem({
+  item,
+  isPreview = false,
+}: {
+  item: NotificationData
+  isPreview?: boolean
+}) {
+  const { setUnreadCount } = useNotifications()
+
   const [isRead, setIsRead] = useState(item.is_read)
   const [approveLink, setApproveLink] = useState('')
 
@@ -61,11 +70,17 @@ export default function NotificationItem({ item }: { item: NotificationData }) {
     const res = await handleMarkAsRead(item.id)
     if (res.success) {
       setIsRead(1)
+      setUnreadCount((prev) => (prev > 0 ? prev - 1 : 0))
     }
-  }, [isRead, item.id])
+  }, [isRead, item.id, setUnreadCount])
 
   const content = useMemo(() => {
     const splitContent = item.content.split('\n')
+
+    if (isPreview) {
+      return <p>{splitContent[0]}</p>
+    }
+
     if (item.type === NOTIFICATION_TYPES_ENUM.NEED_APPROVAL) {
       return splitContent.map((line, index) => {
         if (index === 3) return null // Skip token line
@@ -88,7 +103,7 @@ export default function NotificationItem({ item }: { item: NotificationData }) {
         {line}
       </p>
     ))
-  }, [item.content, item.type])
+  }, [item.content, item.type, isPreview])
 
   return (
     <Card
@@ -121,9 +136,11 @@ export default function NotificationItem({ item }: { item: NotificationData }) {
                 <Badge className={cx('px-2.5 py-0.5 font-medium', config.badge)}>
                   {NOTIFICATION_LABELS[item.type]}
                 </Badge>
-                <Badge variant="outline" className="px-2.5 py-0.5 font-normal text-gray-600">
-                  {item.title}
-                </Badge>
+                {!isPreview && (
+                  <Badge variant="outline" className="px-2.5 py-0.5 font-normal text-gray-600">
+                    {item.title}
+                  </Badge>
+                )}
               </div>
 
               {/* Content */}
@@ -137,7 +154,7 @@ export default function NotificationItem({ item }: { item: NotificationData }) {
           </div>
 
           {/* View Details Button */}
-          {(approveLink || item?.detail_link) && (
+          {!isPreview && (approveLink || item?.detail_link) && (
             <Button
               variant="ghost"
               size="sm"
@@ -151,7 +168,7 @@ export default function NotificationItem({ item }: { item: NotificationData }) {
               )}
               onClick={onMarkAsRead}
             >
-              <a href={item.detail_link} target="_blank" rel="noopener noreferrer">
+              <a href={approveLink || item.detail_link} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4 mr-1" />
                 {approveLink ? 'Approve now' : 'View log'}
               </a>

@@ -26,7 +26,7 @@ export const COMMON_API = {
   FIX_TF: '/fix_tf',
   PUSH_TERRA: '/push_terra',
 
-  // GIT_PUSH: '/git_push',
+  EST_COST: '/est_cost',
 
   LIST_SERVICES: '/list_services',
   NOTIFICATIONS: '/notifications',

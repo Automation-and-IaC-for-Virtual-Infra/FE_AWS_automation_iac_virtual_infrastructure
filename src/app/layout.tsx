@@ -1,4 +1,5 @@
 import { Toaster } from '@/components/ui/sonner'
+import { NotificationProvider } from '@/features/notification/context/NotificationContext'
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
@@ -26,8 +27,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <NotificationProvider>{children}</NotificationProvider>
         {/* <ThemeProvider attribute="class" defaultTheme="system" enableSystem> */}
-        {children}
         <Toaster position="top-right" richColors />
         {/* </ThemeProvider> */}
       </body>
