@@ -12,12 +12,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ROUTES } from '@/constants/route'
 import { logoutAction } from '@/features/auth/lib/actions'
-import { fetchNotifications } from '@/features/notification/libs/fetchers'
+import { useNotifications } from '@/features/notification/context/NotificationContext'
 import { cx } from 'class-variance-authority'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
 
 const navItems = [
   { name: 'Dashboard', href: ROUTES.DASHBOARD },
@@ -30,7 +29,7 @@ export default function Header() {
   const router = useRouter()
   const pathname = usePathname()
 
-  const [countUnread, setCountUnread] = useState(0)
+  const { unreadCount } = useNotifications()
 
   const handleSignOut = async () => {
     const res = await logoutAction()
@@ -38,22 +37,6 @@ export default function Header() {
       router.push(ROUTES.LOGIN)
     }
   }
-
-  const getNotifications = async () => {
-    try {
-      const response = await fetchNotifications({ page: 1, per_page: 10 })
-      if (response.unread_count) {
-        setCountUnread(response.unread_count || 0)
-      }
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
-    }
-  }
-
-  // auto call notification each 1 hour
-  useEffect(() => {
-    getNotifications()
-  }, [])
 
   return (
     <header className="w-full bg-white px-6 py-3 flex items-center justify-between border-b shadow-md h-16">
@@ -79,9 +62,9 @@ export default function Header() {
               {item.name}
             </Link>
 
-            {item.name === 'Notifications' && countUnread > 0 && (
+            {item.name === 'Notifications' && unreadCount > 0 && (
               <span className="absolute -top-1 -right-4 inline-flex items-center justify-center px-1 py-0.5 text-[10px] font-bold leading-none text-red-100 bg-red-600 rounded-full">
-                {countUnread}
+                {unreadCount}
               </span>
             )}
           </div>

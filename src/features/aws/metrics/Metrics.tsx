@@ -127,6 +127,13 @@ export default function Metrics({
               value: metricsList[0]?.Values[i] ?? 0,
             })) ?? []
 
+          const shouldFormatYAxis = [
+            'NetworkIn',
+            'NetworkOut',
+            'DiskReadBytes',
+            'DiskWriteBytes',
+          ].includes(metricName)
+
           return (
             <Card key={metricName}>
               <CardHeader>
@@ -150,9 +157,22 @@ export default function Metrics({
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="time" />
-                      <YAxis domain={[0, 'auto']} />
-                      <Tooltip formatter={(value: number) => [formatCapacity(value), metricName]} />
+                      <XAxis dataKey="time" tick={{ fontSize: 12 }} tickMargin={10} />
+                      <YAxis
+                        tick={{ fontSize: 12 }}
+                        tickMargin={10}
+                        tickFormatter={(value) =>
+                          shouldFormatYAxis ? formatCapacity(value) : value
+                        }
+                        width={80}
+                      />
+                      <Tooltip
+                        formatter={(value: number) => [
+                          shouldFormatYAxis ? formatCapacity(value) : value,
+                          metricName,
+                        ]}
+                        contentStyle={{ fontSize: 12 }}
+                      />
                       <Line
                         type="monotone"
                         dataKey="value"
