@@ -42,20 +42,39 @@ phases:
       - echo "📤 Uploading project to EC2..."
       - scp -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no build.zip ubuntu@54.169.171.227:/home/ubuntu/frontend/
 
-      - echo "🧩 Extracting & building on EC2..."
-      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "
-        set -e
-        echo '📂 Switching to /home/ubuntu/frontend'
-        cd /home/ubuntu/frontend
-        unzip -o build.zip
-        echo '📦 Installing dependencies...'
-        npm ci --omit=dev
-        echo '🏗️ Rebuilding Next.js project on EC2...'
-        npm run build
-        echo '🚀 Starting app with PM2...'
-        pm2 delete frontend || true
-        pm2 start npm --name frontend -- run start -- -H 0.0.0.0
-        pm2 save
+      - echo "🧩 Copying build script..."
+      - scp -i keypair.pem -o StrictHostKeyChecking=no deploy.sh ubuntu@54.169.171.227:/home/ubuntu/
+
+      - |
+        echo "Creating file .env..."
+        cat << EOF > .env
+        NODE_ENV=${NODE_ENV}
+
+        FRONTEND_SERVER_URL=${FRONTEND_SERVER_URL}
+        BACKEND_SERVER_URL=${BACKEND_SERVER_URL}
+        BACKEND_API_KEY=${BACKEND_API_KEY}
+
+        # AWS Configuration
+        AWS_REGION=${AWS_REGION}
+
+        # AWS Cognito
+        COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+        COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
+        COGNITO_CLIENT_SECRET=${COGNITO_CLIENT_SECRET}
+
+        # For metric
+        METRIC_ACCESS_KEY=${METRIC_ACCESS_KEY}
+        METRIC_SECRET_KEY=${METRIC_SECRET_KEY}
+        EOF
+
+      # Copy file .env
+      - scp -i keypair.pem -o StrictHostKeyChecking=no .env ubuntu@54.169.171.227:/home/ubuntu/frontend/
+
+      - echo "Execute deploy.sh on EC2..."
+      - |
+        ssh -i keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "
+          chmod +x /home/ubuntu/deploy.sh
+          /home/ubuntu/deploy.sh
         "
 
       - echo "✅ Deployment completed successfully!"
