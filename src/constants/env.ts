@@ -6,7 +6,7 @@ export const ENV = {
   BACKEND_API_KEY: process.env.BACKEND_API_KEY || '',
   BACKEND_SERVER_URL_2: process.env.BACKEND_SERVER_URL_2 || '',
 
-  AWS_REGION: process.env.AWS_REGION || '',
+  AWS_REGION: process.env.AWS_REGION || 'ap-southeast-1',
 
   COGNITO_USER_POOL_ID: process.env.COGNITO_USER_POOL_ID || '',
   COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID || '',

@@ -35,7 +35,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       setLoading(true)
       const response = await fetchNotifications({
         page: 1,
-        per_page: 10,
+        page_size: 10,
       })
       if (!response.items) return
 
