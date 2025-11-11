@@ -28,7 +28,8 @@ npm run build
 echo "🚀 Đang khởi động/reload ứng dụng với PM2..."
 # Dùng "reload": Nếu app đang chạy, nó sẽ reload (zero-downtime)
 # "||": Nếu reload thất bại (vì app chưa chạy), nó sẽ "start"
-pm2 reload frontend || pm2 start npm --name frontend -- run start -- -H 0.0.0.0
+pm2 delete all
+pm2 start npm --name frontend -- run start -- -H 0.0.0.0
 
 # Lưu lại danh sách process của PM2 để tự khởi động khi reboot
 pm2 save
