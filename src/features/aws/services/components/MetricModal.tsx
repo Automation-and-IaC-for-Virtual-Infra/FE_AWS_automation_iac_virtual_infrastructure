@@ -26,9 +26,7 @@ export default function MetricModal({ isOpen, onClose, service, metrics }: Metri
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Metrics - {service.name}</DialogTitle>
         </DialogHeader>
-        <div className="mt-4">
-          <Metrics service={service} metrics={metrics} />
-        </div>
+        <Metrics service={service} metrics={metrics} />
       </DialogContent>
     </Dialog>
   )

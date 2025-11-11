@@ -1,8 +1,14 @@
 import { SERVICE_STATUS } from '@/constants/common'
+import { createPageTitle, PAGE_TITLES } from '@/constants/route'
 import { fetchServices, getAwsServices } from '@/features/aws/services/libs/fetchers'
 import InfrastructureSetup from '@/features/infrastructure/setup/InfrastructureSetup'
 import { getSessionNewest, getSpecBySessionId } from '@/features/infrastructure/setup/libs/fetchers'
 import { InfraData } from '@/features/infrastructure/setup/libs/types'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: createPageTitle(PAGE_TITLES.INFRASTRUCTURE_SETUP),
+}
 
 // IMPORTANT: This page must be dynamic to always fetch the latest AWS services data
 export const dynamic = 'force-dynamic'
