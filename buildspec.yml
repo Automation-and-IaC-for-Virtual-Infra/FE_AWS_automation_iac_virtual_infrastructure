@@ -24,7 +24,7 @@ phases:
       - echo "✅ Build complete"
 
       - echo "📦 Zipping full project for deployment..."
-      - zip -r build.zip . -x "*.git*" "node_modules/*" "build.zip"
+      - zip -r build.zip . -x "*.git*" "node_modules/*" ".next/*" "build.zip"
 
   post_build:
     commands:
