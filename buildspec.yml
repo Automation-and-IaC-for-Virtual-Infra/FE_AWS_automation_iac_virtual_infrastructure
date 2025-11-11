@@ -48,7 +48,7 @@ phases:
       - |
         echo "Creating file .env..."
         cat << EOF > .env
-        NODE_ENV=${NODE_ENV}
+        NODE_ENV=${APP_ENVI}
 
         FRONTEND_SERVER_URL=${FRONTEND_SERVER_URL}
         BACKEND_SERVER_URL=${BACKEND_SERVER_URL}
