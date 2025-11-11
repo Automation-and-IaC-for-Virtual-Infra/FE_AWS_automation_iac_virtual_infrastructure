@@ -20,7 +20,7 @@ echo "📦 Đang giải nén build.zip..."
 unzip -o build.zip
 
 echo "📦 Đang cài đặt dependencies (npm ci)..."
-npm ci --omit=dev
+npm install
 
 echo "🏗️ Đang build lại dự án Next.js trên EC2..."
 npm run build
