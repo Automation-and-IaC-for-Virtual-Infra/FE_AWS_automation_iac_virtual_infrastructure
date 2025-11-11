@@ -28,6 +28,8 @@ phases:
 
   post_build:
     commands:
+      - rm -R /home/ubuntu/frontend
+      - mkdir -p /home/ubuntu/frontend
       - echo "🚀 Deploying to EC2..."
       - mkdir -p ~/.ssh
       - echo "$SSH_KEY" > ~/.ssh/home-keypair.pem
@@ -37,15 +39,13 @@ phases:
       - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "echo '✅ Connected to EC2'"
 
       - echo "📤 Uploading project to EC2..."
-      - scp -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no build.zip ubuntu@54.169.171.227:/home/ubuntu/frontend
+      - scp -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no build.zip ubuntu@54.169.171.227:/home/ubuntu/frontend/
 
       - echo "🧩 Extracting & building on EC2..."
       - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "
         set -e
         echo '📂 Switching to /home/ubuntu/frontend'
         cd /home/ubuntu/frontend
-        echo '🧹 Cleaning old files...'
-        rm -rf .next node_modules package-lock.json || true
         unzip -o build.zip
         echo '📦 Installing dependencies...'
         npm ci --omit=dev
