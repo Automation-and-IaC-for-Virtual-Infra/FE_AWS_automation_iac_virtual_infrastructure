@@ -43,7 +43,7 @@ phases:
       - scp -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no build.zip ubuntu@54.169.171.227:/home/ubuntu/frontend/
 
       - echo "🧩 Copying build script..."
-      - scp -i keypair.pem -o StrictHostKeyChecking=no deploy.sh ubuntu@54.169.171.227:/home/ubuntu/
+      - scp -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no deploy.sh ubuntu@54.169.171.227:/home/ubuntu/
 
       - |
         echo "Creating file .env..."
@@ -68,11 +68,11 @@ phases:
         EOF
 
       # Copy file .env
-      - scp -i keypair.pem -o StrictHostKeyChecking=no .env ubuntu@54.169.171.227:/home/ubuntu/frontend/
+      - scp -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no .env ubuntu@54.169.171.227:/home/ubuntu/frontend/
 
       - echo "Execute deploy.sh on EC2..."
       - |
-        ssh -i keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "
+        ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "
           chmod +x /home/ubuntu/deploy.sh
           /home/ubuntu/deploy.sh
         "
