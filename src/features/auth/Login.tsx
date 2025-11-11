@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { ROUTES } from '@/constants/route'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { cx } from 'class-variance-authority'
 import { Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -56,8 +57,11 @@ export default function Login() {
     }
 
     if (result.success) {
-      toast.success('Login successful!')
       router.push(ROUTES.DASHBOARD)
+      setTimeout(() => {
+        toast.success('Login successful!')
+      }, 1000)
+      return
     } else {
       toast.error(result.error || 'Login failed')
     }
@@ -127,7 +131,13 @@ export default function Login() {
 
               <div className="text-center text-sm">
                 <span className="text-gray-600">Don't have an account? </span>
-                <Link href="/register" className="text-blue-600 hover:underline font-medium">
+                <Link
+                  href="/register"
+                  className={cx(
+                    'text-blue-600 hover:underline font-medium',
+                    isLoading && 'pointer-events-none text-gray-400'
+                  )}
+                >
                   Sign up
                 </Link>
               </div>
