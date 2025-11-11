@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   title: createPageTitle(PAGE_TITLES.CONFIRM_REGISTRATION),
 }
 
+export const dynamic = 'force-dynamic'
+
 export default function ConfirmRegistrationPage() {
   return (
     <Suspense
