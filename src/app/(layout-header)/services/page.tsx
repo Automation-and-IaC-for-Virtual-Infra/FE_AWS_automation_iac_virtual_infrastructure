@@ -1,7 +1,13 @@
+import { createPageTitle, PAGE_TITLES } from '@/constants/route'
 import { fetchMetrics } from '@/features/aws/metrics/libs/fetchers'
 import { fetchServices } from '@/features/aws/services/libs/fetchers'
 import { filterServicesHasMetrics } from '@/features/aws/services/libs/utils'
 import Services from '@/features/aws/services/Services'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: createPageTitle(PAGE_TITLES.SERVICES),
+}
 
 export const dynamic = 'force-dynamic'
 

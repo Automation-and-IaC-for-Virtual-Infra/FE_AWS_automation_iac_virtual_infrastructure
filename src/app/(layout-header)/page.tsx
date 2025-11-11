@@ -1,7 +1,13 @@
+import { createPageTitle, PAGE_TITLES } from '@/constants/route'
 import { fetchServices } from '@/features/aws/services/libs/fetchers'
 import Dashboard from '@/features/dashboard/Dashboard'
 import { fetchEstCostMonthly } from '@/features/dashboard/libs/fetchers'
 import { getSessionNewest } from '@/features/infrastructure/setup/libs/fetchers'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: createPageTitle(PAGE_TITLES.DASHBOARD),
+}
 
 export const dynamic = 'force-dynamic'
 

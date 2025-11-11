@@ -1,6 +1,6 @@
 'use client'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -79,8 +79,7 @@ export default function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/avatar.png" alt="@user" />
-                <AvatarFallback>UN</AvatarFallback>
+                <AvatarFallback className="bg-amber-200 cursor-pointer">UN</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>

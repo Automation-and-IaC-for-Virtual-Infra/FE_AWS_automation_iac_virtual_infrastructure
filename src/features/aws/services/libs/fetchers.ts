@@ -10,7 +10,7 @@ export const getAwsServices = async () => {
     const url = toFrontendUrl(AWS_API.GET_AWS_SERVICES)
     const res = await fetch(url)
 
-    return res.json() as Promise<ApiResponse<ListAwsServicesData>>
+    return (await res.json()) as Promise<ApiResponse<ListAwsServicesData>>
   } catch (error) {
     return createErrorResponse('Failed to fetch AWS services', 'FETCH_ERROR', { error })
   }
