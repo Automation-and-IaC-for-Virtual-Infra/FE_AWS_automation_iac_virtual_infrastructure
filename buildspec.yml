@@ -28,8 +28,6 @@ phases:
 
   post_build:
     commands:
-      - rm -R /home/ubuntu/frontend
-      - mkdir -p /home/ubuntu/frontend
       - echo "🚀 Deploying to EC2..."
       - mkdir -p ~/.ssh
       - echo "$SSH_KEY" > ~/.ssh/home-keypair.pem
@@ -37,6 +35,9 @@ phases:
 
       - echo "🔑 Testing SSH connection..."
       - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "echo '✅ Connected to EC2'"
+
+      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "rm -R /home/ubuntu/frontend"
+      - ssh -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no ubuntu@54.169.171.227 "mkdir -p /home/ubuntu/frontend"
 
       - echo "📤 Uploading project to EC2..."
       - scp -i ~/.ssh/home-keypair.pem -o StrictHostKeyChecking=no build.zip ubuntu@54.169.171.227:/home/ubuntu/frontend/
