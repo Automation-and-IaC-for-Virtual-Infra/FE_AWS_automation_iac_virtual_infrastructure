@@ -18,6 +18,32 @@ export const handleChat = async (prompt: string, session_id: string) => {
   return res
 }
 
+export const handleValidateTerraform = async (session_id: string) => {
+  const res = await apiBERequest({
+    path: COMMON_API.VALIDATE_TF,
+    options: {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id,
+      }),
+    },
+  })
+  return res
+}
+
+export const handleAutoFixTerraform = async (session_id: string) => {
+  const res = await apiBERequest({
+    path: COMMON_API.AUTO_FIX,
+    options: {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id,
+      }),
+    },
+  })
+  return res
+}
+
 export const handleGenerateSpec = async (session_id: string) => {
   const res = await apiBERequest({
     path: COMMON_API.GENERATE_SPEC,
@@ -77,6 +103,34 @@ export const handlePushToRepository = async (session_id: string) => {
     path: `${COMMON_API.PUSH_TERRA}?session_id=${session_id}`,
     options: {
       method: 'POST',
+    },
+  })
+  return res
+}
+
+export const handleGetTerraformFiles = async (session_id: string) => {
+  const res = await apiBERequest({
+    path: COMMON_API.GET_TF,
+    options: {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id,
+      }),
+    },
+  })
+  return res
+}
+
+export const handleFixTerraform = async (session_id: string, file_name: string, file_content: string) => {
+  const res = await apiBERequest({
+    path: COMMON_API.FIX_TF,
+    options: {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id,
+        file_name,
+        file_content,
+      }),
     },
   })
   return res

@@ -11,6 +11,11 @@ import {
   SpecCompletedPayload,
   SpecContentPayload,
   SpecThinkingPayload,
+  TerraformAutoFixPreviewPayload,
+  TerraformGenCompletedPayload,
+  TerraformGenFilePayload,
+  TerraformRecommendActionPayload,
+  TerraformSimpleMessagePayload,
   WebSocketConnectionState,
   WebSocketEventType,
 } from '@/types/websocket'
@@ -25,12 +30,14 @@ interface WebSocketContextType {
   sessionId: string | null
   messages: ChatMessage[]
   isProcessing: boolean
-  processingType: 'chat' | 'spec' | null
+  processingType: 'chat' | 'spec' | 'terraform' | null
   processingMessage: string | null
   connect: () => Promise<void>
   disconnect: () => void
   sendMessage: (prompt: string) => Promise<void>
   generateSpec: () => Promise<void>
+  validateTerraform: () => Promise<void>
+  autoFixTerraform: () => Promise<void>
   clearMessages: () => void
 }
 
@@ -47,7 +54,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   )
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
-  const [processingType, setProcessingType] = useState<'chat' | 'spec' | null>(null)
+  const [processingType, setProcessingType] = useState<'chat' | 'spec' | 'terraform' | null>(null)
   const [processingMessage, setProcessingMessage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -60,6 +67,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
     // Set up event listeners for all WebSocket events
     const eventListeners: Partial<Record<WebSocketEventType, (payload: any) => void>> = {
+      // chat
       'chat:thinking': (payload: ChatThinkingPayload) => {
         setIsProcessing(true)
         setProcessingType('chat')
@@ -101,6 +109,8 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
           payload
         )
       },
+
+      // gen spec
       'spec:thinking': (payload: SpecThinkingPayload) => {
         setIsProcessing(true)
         setProcessingType('spec')
@@ -127,6 +137,101 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
           'spec:error',
           payload
         )
+      },
+
+      // gen tf
+      'terraform:gen:start': (payload: TerraformSimpleMessagePayload) => {
+        setIsProcessing(true)
+        setProcessingType('terraform')
+        setProcessingMessage(payload.accumulated_thought || 'Generating Terraform files...')
+      },
+      'terraform:gen:file_generated': (payload: TerraformGenFilePayload) => {
+        setProcessingMessage(payload.file_name)
+      },
+      'terraform:gen:localstack_file_generated': (payload: TerraformGenFilePayload) => {
+        setProcessingMessage(payload.file_name)
+      },
+      'terraform:gen:completed': (payload: TerraformGenCompletedPayload) => {
+        setIsProcessing(false)
+        setProcessingType(null)
+        setProcessingMessage(null)
+
+        addMessage('assistant', 'Terraform files generated!', 'terraform:gen:completed', payload)
+      },
+
+      // validate tf
+      'terraform:init:start': (payload: TerraformSimpleMessagePayload) => {
+        setIsProcessing(true)
+        setProcessingType('terraform')
+        setProcessingMessage(payload.message || 'Initializing Terraform...')
+      },
+      'terraform:init:completed': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => (prev + '\n' + payload.result.stdout || 'Initializing Terraform...') + '\n' + '--------------------' + '\n')
+      },
+      'terraform:validate:start': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => prev + '\n' + payload.message || 'Validating Terraform files...')
+      },
+      'terraform:validate:completed': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => (prev + '\n' + payload.result.stdout || 'Validating Terraform files...') + '\n' + '--------------------' + '\n')
+      },
+      'terraform:tflint:start': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => prev + '\n' + payload.message || 'Running TFLint...')
+      },
+      'terraform:tflint:completed': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => (prev + '\n' + payload.result.stdout || 'Running TFLint...') + '\n' + '--------------------' + '\n')
+      },
+      'terraform:checkov:start': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => prev + '\n' + payload.message || 'Running Checkov...')
+      },
+      'terraform:checkov:completed': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => (prev + '\n' + payload.result.stdout || 'Running Checkov...') + '\n' + '--------------------' + '\n')
+      },
+      'terraform:localstack:start': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => prev + '\n' + payload.message || 'Running LocalStack...')
+      },
+      'terraform:localstack:error': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => (prev + '\n' + payload.note || 'Running LocalStack...') + '\n' + '--------------------' + '\n')
+      },
+      'terraform:localstack:completed': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => (prev + '\n' + payload.result.stdout || 'Running LocalStack...') + '\n' + '--------------------' + '\n')
+      },
+      'terraform:conftest:start': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => prev + '\n' + payload.message || 'Running Conftest...')
+      },
+      'terraform:conftest:completed': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => (prev + '\n' + payload.result.stdout || 'Running Conftest...') + '\n' + '--------------------' + '\n')
+      },
+      'terraform:recommend_action': (payload: TerraformRecommendActionPayload) => {
+        setIsProcessing(false)
+        setProcessingType(null)
+        setProcessingMessage(null)
+
+        addMessage('assistant', payload.message, 'terraform:recommend_action', payload)
+      },
+
+
+      // auto fix tf
+      'terraform:auto_fix:start': (payload: TerraformSimpleMessagePayload) => {
+        setIsProcessing(true)
+        setProcessingType('terraform')
+        setProcessingMessage(payload.message || 'Running auto fix...')
+      },
+
+      'terraform:auto_fix:validation_source': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(prev => (prev + '\n' + payload.message || 'Running auto fix...') + '\n' + '--------------------' + '\n')
+      },
+      'terraform:auto_fix:thinking': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(payload.accumulated_thought || 'Running auto fix...')
+      },
+      'terraform:auto_fix:content': (payload: TerraformSimpleMessagePayload) => {
+        setProcessingMessage(payload.accumulated || 'Running auto fix...')
+      },
+      'terraform:auto_fix:preview': (payload: TerraformAutoFixPreviewPayload) => {
+        setIsProcessing(false)
+        setProcessingType(null)
+        setProcessingMessage(null)
+
+        addMessage('assistant', payload.message, 'terraform:auto_fix:preview', payload)
       },
     }
 
@@ -192,12 +297,53 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         return
       }
 
+      setIsProcessing(true)
       const _response = await wsService.sendChatMessage(prompt, currentSessionId)
     } catch (error) {
       console.error('Failed to send message:', error)
       addMessage(
         'assistant',
         `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+      throw error
+    }
+  }
+
+  const validateTerraform = async () => {
+    try {
+      if (!currentSessionId) {
+        console.error('No active session. Please connect first.')
+        return
+      }
+
+      setIsProcessing(true)
+      addMessage('user', 'Validate terraform')
+      await wsService.validateTerraform(currentSessionId)
+    } catch (error) {
+      console.error('Failed to validate terraform:', error)
+      addMessage(
+        'assistant',
+        `Failed to validate Terraform: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+      throw error
+    }
+  }
+
+  const autoFixTerraform = async () => {
+    try {
+      if (!currentSessionId) {
+        console.error('No active session. Please connect first.')
+        return
+      }
+
+      setIsProcessing(true)
+      addMessage('user', 'Auto fix terraform')
+      await wsService.autoFixTerraform(currentSessionId)
+    } catch (error) {
+      console.error('Failed to auto fix terraform:', error)
+      addMessage(
+        'assistant',
+        `Failed to auto fix Terraform: ${error instanceof Error ? error.message : 'Unknown error'}`
       )
       throw error
     }
@@ -244,6 +390,8 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     disconnect,
     sendMessage,
     generateSpec,
+    validateTerraform,
+    autoFixTerraform,
     clearMessages,
   }
 

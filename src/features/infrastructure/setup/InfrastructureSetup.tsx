@@ -32,8 +32,7 @@ import 'reactflow/dist/style.css'
 import { toast } from 'sonner'
 import { InfrastructureChat } from './components/InfrastructureChat'
 import { PreviewTerraformModal } from './components/TerraformPreviewModal'
-import { handleApplySpec, handleGenTerraform } from './libs/actions'
-import { getTerraformBySessionId } from './libs/fetchers'
+import { handleApplySpec, handleGenTerraform, handleGetTerraformFiles } from './libs/actions'
 import { InfraData } from './libs/types'
 import { mappingInfraDataToReactFlow, mappingReactFlowToInfraData } from './libs/utils'
 
@@ -91,6 +90,7 @@ export default function InfrastructureSetup({
   const [isLoadingPage, setIsLoadingPage] = useState(true)
   const [sessionId, setSessionId] = useState<string>('')
   const [showModalTerraform, setShowModalTerraform] = useState(false)
+  const [showDiff, setShowDiff] = useState(false)
   const [terraformFiles, setTerraformFiles] = useState<
     { file_name: string; file_content: string }[]
   >([])
@@ -209,31 +209,6 @@ export default function InfrastructureSetup({
     (params: Edge | Connection) => {
       const { source, target } = params
       if (!source || !target) return
-
-      // const sourceNode = nodes.find((n) => n.id === source)
-      // const targetNode = nodes.find((n) => n.id === target)
-
-      // If node is not found or there is no connections configuration, do not allow connection
-      // if (!sourceNode || !sourceNode.data?.connections) {
-      //   toast.error(`"${sourceNode?.data?.displayName}" cannot connect to any service.`)
-      //   return
-      // }
-
-      // If connections does not include target node's service id, do not allow connection
-      // const { requiredConnections, recommendedConnections, optionalConnections } =
-      //   sourceNode.data.connections
-      // const listConnections = [
-      //   ...(requiredConnections || []),
-      //   ...(recommendedConnections || []),
-      //   ...(optionalConnections || []),
-      // ]
-
-      // if (!targetNode?.data?.id || !listConnections.includes(targetNode?.data?.id)) {
-      //   toast.error(
-      //     `Cannot connect "${sourceNode.data.displayName}" to "${targetNode?.data?.displayName}".`
-      //   )
-      //   return
-      // }
 
       setEdges((eds) =>
         addEdge(
@@ -359,19 +334,41 @@ export default function InfrastructureSetup({
     const payload = { nodes, edges }
     const res = await handleApplySpec(sessionId, mappingReactFlowToInfraData(payload))
     if (res.status === 'ok') {
-      const resGenTf = await handleGenTerraform(sessionId)
-      if (resGenTf?.success) {
-        setIsLoading(true)
-        setShowModalTerraform(true)
+      setIsShowInfrastructureChat(true)
 
-        const resGetTf = await getTerraformBySessionId(sessionId)
+      const resGenTf = await handleGenTerraform(sessionId)
+      if (!resGenTf?.success && resGenTf?.message) {
+        toast.error(resGenTf.message)
+      }
+    }
+  }
+
+  const openPreviewTerraform = async (
+    sessionIdParam?: string,
+    filesParam?: { file_name: string; file_content: string }[],
+    showDiffParam?: boolean
+  ) => {
+    const currentSessionId = sessionIdParam || sessionId
+    if (!currentSessionId) return
+
+    try {
+      setIsLoading(true)
+      setShowModalTerraform(true)
+      setShowDiff(showDiffParam || false)
+
+      if (filesParam) {
+        setTerraformFiles(filesParam)
+      } else {
+        const resGetTf = await handleGetTerraformFiles(currentSessionId)
         setTerraformFiles(resGetTf.files || [])
         if (resGetTf.message) {
           toast.success(resGetTf.message)
         }
-
-        setIsLoading(false)
       }
+    } catch (_error) {
+      toast.error('Failed to fetch Terraform files')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -519,6 +516,7 @@ export default function InfrastructureSetup({
               setIsShowInfrastructureChat(false)
             }}
             onApplySuggestion={handleApplySuggestion}
+            onGoToPreviewTerraform={openPreviewTerraform}
           />
 
           {showModalTerraform && (
@@ -528,6 +526,7 @@ export default function InfrastructureSetup({
               sessionId={sessionId}
               files={terraformFiles}
               loading={isLoading}
+              showDiff={showDiff}
             />
           )}
         </>

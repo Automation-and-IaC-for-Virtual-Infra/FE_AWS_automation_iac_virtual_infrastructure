@@ -1,5 +1,10 @@
 import { FRONTEND_API } from '@/constants/api'
-import { handleChat, handleGenerateSpec } from '@/features/infrastructure/setup/libs/actions'
+import {
+  handleAutoFixTerraform,
+  handleChat,
+  handleGenerateSpec,
+  handleValidateTerraform,
+} from '@/features/infrastructure/setup/libs/actions'
 import {
   PingMessage,
   WebSocketConnectionState,
@@ -43,15 +48,49 @@ export class WebSocketService {
   constructor() {
     // Initialize listeners for all event types
     const eventTypes: WebSocketEventType[] = [
+      // chat
       'chat:thinking',
       'chat:content',
       'chat:clarification',
       'chat:ready_to_generate',
       'chat:error',
+
+      // gen spec
       'spec:thinking',
       'spec:content',
       'spec:completed',
       'spec:error',
+
+      // gen tf
+      'terraform:gen:start',
+      'terraform:gen:file_generated',
+      'terraform:gen:localstack_file_generated',
+      'terraform:gen:completed',
+
+      // validate tf
+      'terraform:init:start',
+      'terraform:init:completed',
+      'terraform:validate:start',
+      'terraform:validate:completed',
+      'terraform:tflint:start',
+      'terraform:tflint:completed',
+      'terraform:checkov:start',
+      'terraform:checkov:completed',
+      'terraform:localstack:start',
+      'terraform:localstack:starting',
+      'terraform:localstack:error',
+      'terraform:localstack:completed',
+      'terraform:conftest:start',
+      'terraform:conftest:completed',
+      'terraform:recommend_action',
+
+      // auto fix tf
+      'terraform:auto_fix:start',
+      'terraform:auto_fix:validation_source',
+      'terraform:auto_fix:thinking',
+      'terraform:auto_fix:content',
+      'terraform:auto_fix:preview',
+      'terraform:auto_fix:completed',
     ]
 
     eventTypes.forEach((type) => {
@@ -257,6 +296,18 @@ export class WebSocketService {
 
   async generateSpec(session_id: string): Promise<{ session_id: string }> {
     const response = await handleGenerateSpec(session_id)
+
+    return response
+  }
+
+   async validateTerraform(session_id: string): Promise<any> {
+    const response = await handleValidateTerraform(session_id)
+
+    return response
+  }
+
+  async autoFixTerraform(session_id: string): Promise<any> {
+    const response = await handleAutoFixTerraform(session_id)
 
     return response
   }

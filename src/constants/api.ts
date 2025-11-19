@@ -20,6 +20,8 @@ export const COMMON_API = {
 
   GEN_TF: '/gen_tf',
   GET_TF: '/get_tf',
+  VALIDATE_TF: '/validate_tf',
+  AUTO_FIX: '/auto_fix',
   FIX_TF: '/fix_tf',
   PUSH_TERRA: '/push_terra',
 
