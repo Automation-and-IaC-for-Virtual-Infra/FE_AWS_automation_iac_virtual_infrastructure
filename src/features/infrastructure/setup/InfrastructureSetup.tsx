@@ -30,7 +30,7 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { toast } from 'sonner'
-import { GenerateInfra } from './components/GenerateInfra'
+import { InfrastructureChat } from './components/InfrastructureChat'
 import { PreviewTerraformModal } from './components/TerraformPreviewModal'
 import { handleApplySpec, handleGenTerraform } from './libs/actions'
 import { getTerraformBySessionId } from './libs/fetchers'
@@ -75,7 +75,7 @@ export default function InfrastructureSetup({
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
   const [selectedNode, setSelectedNode] = useState<Node<AwsService> | null>(null)
   const [searchValue, setSearchValue] = useState('')
-  const [isShowGenerateInfra, setIsShowGenerateInfra] = useState(true)
+  const [isShowInfrastructureChat, setIsShowInfrastructureChat] = useState(true)
 
   const [promptNode, setPromptNode] = useState<string>('')
   const [messagePromptNode, setMessagePromptNode] = useState<string>('')
@@ -498,7 +498,7 @@ export default function InfrastructureSetup({
   useEffect(() => {
     if (spec_json && session_id) {
       handleApplySuggestion(mappingInfraDataToReactFlow(spec_json), session_id)
-      setIsShowGenerateInfra(false)
+      setIsShowInfrastructureChat(false)
     }
 
     setIsLoadingPage(false)
@@ -513,10 +513,10 @@ export default function InfrastructureSetup({
     <>
       {!isDeploying && (
         <>
-          <GenerateInfra
-            isOpen={isShowGenerateInfra}
+          <InfrastructureChat
+            isOpen={isShowInfrastructureChat}
             onClose={() => {
-              setIsShowGenerateInfra(false)
+              setIsShowInfrastructureChat(false)
             }}
             onApplySuggestion={handleApplySuggestion}
           />

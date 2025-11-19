@@ -4,6 +4,7 @@ import { fetchServices, getAwsServices } from '@/features/aws/services/libs/fetc
 import InfrastructureSetup from '@/features/infrastructure/setup/InfrastructureSetup'
 import { getSessionNewest, getSpecBySessionId } from '@/features/infrastructure/setup/libs/fetchers'
 import { InfraData } from '@/features/infrastructure/setup/libs/types'
+import { WebSocketProvider } from '@/features/websocket'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -40,5 +41,9 @@ export default async function InfrastructureSetupPage() {
     throw new Error(res.error?.message || 'Failed to load AWS services')
   }
 
-  return <InfrastructureSetup result={res.data} session_id={session_id} spec_json={spec_json} />
+  return (
+    <WebSocketProvider>
+      <InfrastructureSetup result={res.data} session_id={session_id} spec_json={spec_json} />
+    </WebSocketProvider>
+  )
 }

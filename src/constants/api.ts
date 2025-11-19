@@ -1,14 +1,11 @@
-/* ==================== AWS APIs ==================== */
-
-export const MOCK_API = {
-  NOTIFICATIONS: '/api/notifications',
-  AWS_NOTIFICATIONS: '/api/notifications/aws',
-}
-
 export const AWS_API = {
   GET_AWS_SERVICES: '/api/aws/service',
   GET_AWS_VERIFICATION: '/api/aws/verification',
   GET_AWS_METRIC: '/api/aws/metric',
+}
+
+export const FRONTEND_API = {
+  GET_WEB_SOCKET_URL: '/api/websocket-url',
 }
 
 export const COMMON_API = {
