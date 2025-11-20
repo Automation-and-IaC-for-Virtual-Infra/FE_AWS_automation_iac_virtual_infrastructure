@@ -1,28 +1,25 @@
-import { FRONTEND_API } from '@/constants/api'
 import {
   handleAutoFixTerraform,
   handleChat,
   handleGenerateSpec,
   handleValidateTerraform,
 } from '@/features/infrastructure/setup/libs/actions'
+import { getURLBE } from '@/features/websocket/libs/fetchers'
 import {
   PingMessage,
   WebSocketConnectionState,
   WebSocketEventType,
   WebSocketMessage,
 } from '@/types/websocket'
-import { toFrontendUrl } from '@/utils/url'
 
 let WS_BASE_URL = 'ws://localhost:8001'
 
 // Fetch WebSocket configuration from server-side API
 const fetchWebSocketConfig = async () => {
   try {
-    const response = await fetch(toFrontendUrl(FRONTEND_API.GET_WEB_SOCKET_URL))
-    if (response.ok) {
-      const config = await response.json()
-      WS_BASE_URL = config.wsBaseUrl
-    }
+    const response = await getURLBE()
+      console.log("🚀 ~ fetchWebSocketConfig ~ response:", response)
+      WS_BASE_URL = response
   } catch (error) {
     console.error('Failed to fetch WebSocket config:', error)
   }
