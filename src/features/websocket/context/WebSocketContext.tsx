@@ -22,6 +22,15 @@ import {
 import { generateUUID } from '@/utils/uuid'
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react'
 
+interface ValidationStep {
+  id: string
+  name: string
+  description: string
+  status: 'pending' | 'running' | 'success' | 'warning' | 'error'
+  order: number
+  details?: string
+}
+
 interface WebSocketContextType {
   connectionState: WebSocketConnectionState
   isConnected: boolean
@@ -32,6 +41,7 @@ interface WebSocketContextType {
   isProcessing: boolean
   processingType: 'chat' | 'spec' | 'terraform' | null
   processingMessage: string | null
+  validationSteps: ValidationStep[]
   connect: () => Promise<void>
   disconnect: () => void
   sendMessage: (prompt: string) => Promise<void>
@@ -56,6 +66,68 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingType, setProcessingType] = useState<'chat' | 'spec' | 'terraform' | null>(null)
   const [processingMessage, setProcessingMessage] = useState<string | null>(null)
+  const [validationSteps, setValidationSteps] = useState<ValidationStep[]>([
+    {
+      id: 'terraform:init',
+      name: 'Terraform Init',
+      description: 'Initialize Terraform working directory',
+      status: 'pending',
+      order: 1,
+    },
+    {
+      id: 'terraform:validate',
+      name: 'Terraform Validate',
+      description: 'Validate Terraform configuration files',
+      status: 'pending',
+      order: 2,
+    },
+    {
+      id: 'terraform:tflint',
+      name: 'TFLint',
+      description: 'Run TFLint for Terraform best practices',
+      status: 'pending',
+      order: 3,
+    },
+    {
+      id: 'terraform:checkov',
+      name: 'Checkov',
+      description: 'Run Checkov for security compliance',
+      status: 'pending',
+      order: 4,
+    },
+    {
+      id: 'terraform:localstack',
+      name: 'LocalStack Test',
+      description: 'Test infrastructure with LocalStack',
+      status: 'pending',
+      order: 5,
+    },
+    {
+      id: 'terraform:conftest',
+      name: 'Conftest',
+      description: 'Run policy validation with Conftest',
+      status: 'pending',
+      order: 6,
+    },
+  ])
+
+  // Helper function to update validation step status
+  const updateValidationStep = (
+    stepId: string,
+    status: ValidationStep['status'],
+    details?: string
+  ) => {
+    setValidationSteps((prev) =>
+      prev.map((step) => (step.id === stepId ? { ...step, status, details } : step))
+    )
+  }
+
+  // Helper function to reset all validation steps
+  const resetValidationSteps = () => {
+    setValidationSteps((prev) =>
+      prev.map((step) => ({ ...step, status: 'pending', details: undefined }))
+    )
+  }
 
   useEffect(() => {
     // Listen to connection state changes
@@ -164,42 +236,130 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         setIsProcessing(true)
         setProcessingType('terraform')
         setProcessingMessage(payload.message || 'Initializing Terraform...')
+        resetValidationSteps()
+        updateValidationStep('terraform:init', 'running')
       },
       'terraform:init:completed': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => (prev + '\n' + payload.result.stdout || 'Initializing Terraform...') + '\n' + '--------------------' + '\n')
+        const isSuccess = payload.result?.code === 0
+        updateValidationStep(
+          'terraform:init',
+          isSuccess ? 'success' : 'error',
+          payload.result?.stdout
+        )
+        setProcessingMessage(
+          (prev) =>
+            (prev + '\n' + payload.result.stdout || 'Initializing Terraform...') +
+            '\n' +
+            '--------------------' +
+            '\n'
+        )
       },
       'terraform:validate:start': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => prev + '\n' + payload.message || 'Validating Terraform files...')
+        setProcessingMessage(
+          (prev) => prev + '\n' + payload.message || 'Validating Terraform files...'
+        )
+        updateValidationStep('terraform:validate', 'running')
       },
       'terraform:validate:completed': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => (prev + '\n' + payload.result.stdout || 'Validating Terraform files...') + '\n' + '--------------------' + '\n')
+        const isSuccess = payload.result?.code === 0
+        updateValidationStep(
+          'terraform:validate',
+          isSuccess ? 'success' : 'error',
+          payload.result?.stdout
+        )
+        setProcessingMessage(
+          (prev) =>
+            (prev + '\n' + payload.result.stdout || 'Validating Terraform files...') +
+            '\n' +
+            '--------------------' +
+            '\n'
+        )
       },
       'terraform:tflint:start': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => prev + '\n' + payload.message || 'Running TFLint...')
+        setProcessingMessage((prev) => prev + '\n' + payload.message || 'Running TFLint...')
+        updateValidationStep('terraform:tflint', 'running')
       },
       'terraform:tflint:completed': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => (prev + '\n' + payload.result.stdout || 'Running TFLint...') + '\n' + '--------------------' + '\n')
+        const isSuccess = payload.result?.code === 0
+        updateValidationStep(
+          'terraform:tflint',
+          isSuccess ? 'success' : 'warning',
+          payload.result?.stdout
+        )
+        setProcessingMessage(
+          (prev) =>
+            (prev + '\n' + payload.result.stdout || 'Running TFLint...') +
+            '\n' +
+            '--------------------' +
+            '\n'
+        )
       },
       'terraform:checkov:start': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => prev + '\n' + payload.message || 'Running Checkov...')
+        setProcessingMessage((prev) => prev + '\n' + payload.message || 'Running Checkov...')
+        updateValidationStep('terraform:checkov', 'running')
       },
       'terraform:checkov:completed': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => (prev + '\n' + payload.result.stdout || 'Running Checkov...') + '\n' + '--------------------' + '\n')
+        const isSuccess = payload.result?.code === 0
+        updateValidationStep(
+          'terraform:checkov',
+          isSuccess ? 'success' : 'warning',
+          payload.result?.stdout
+        )
+        setProcessingMessage(
+          (prev) =>
+            (prev + '\n' + payload.result.stdout || 'Running Checkov...') +
+            '\n' +
+            '--------------------' +
+            '\n'
+        )
       },
       'terraform:localstack:start': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => prev + '\n' + payload.message || 'Running LocalStack...')
+        setProcessingMessage((prev) => prev + '\n' + payload.message || 'Running LocalStack...')
+        updateValidationStep('terraform:localstack', 'running')
       },
       'terraform:localstack:error': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => (prev + '\n' + payload.note || 'Running LocalStack...') + '\n' + '--------------------' + '\n')
+        updateValidationStep('terraform:localstack', 'error', payload.note)
+        setProcessingMessage(
+          (prev) =>
+            (prev + '\n' + payload.note || 'Running LocalStack...') +
+            '\n' +
+            '--------------------' +
+            '\n'
+        )
       },
       'terraform:localstack:completed': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => (prev + '\n' + payload.result.stdout || 'Running LocalStack...') + '\n' + '--------------------' + '\n')
+        const isSuccess = payload.result?.code === 0
+        updateValidationStep(
+          'terraform:localstack',
+          isSuccess ? 'success' : 'error',
+          payload.result?.stdout
+        )
+        setProcessingMessage(
+          (prev) =>
+            (prev + '\n' + payload.result.stdout || 'Running LocalStack...') +
+            '\n' +
+            '--------------------' +
+            '\n'
+        )
       },
       'terraform:conftest:start': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => prev + '\n' + payload.message || 'Running Conftest...')
+        setProcessingMessage((prev) => prev + '\n' + payload.message || 'Running Conftest...')
+        updateValidationStep('terraform:conftest', 'running')
       },
       'terraform:conftest:completed': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => (prev + '\n' + payload.result.stdout || 'Running Conftest...') + '\n' + '--------------------' + '\n')
+        const isSuccess = payload.result?.code === 0
+        updateValidationStep(
+          'terraform:conftest',
+          isSuccess ? 'success' : 'warning',
+          payload.result?.stdout
+        )
+        setProcessingMessage(
+          (prev) =>
+            (prev + '\n' + payload.result.stdout || 'Running Conftest...') +
+            '\n' +
+            '--------------------' +
+            '\n'
+        )
       },
       'terraform:recommend_action': (payload: TerraformRecommendActionPayload) => {
         setIsProcessing(false)
@@ -209,7 +369,6 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         addMessage('assistant', payload.message, 'terraform:recommend_action', payload)
       },
 
-
       // auto fix tf
       'terraform:auto_fix:start': (payload: TerraformSimpleMessagePayload) => {
         setIsProcessing(true)
@@ -218,7 +377,13 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       },
 
       'terraform:auto_fix:validation_source': (payload: TerraformSimpleMessagePayload) => {
-        setProcessingMessage(prev => (prev + '\n' + payload.message || 'Running auto fix...') + '\n' + '--------------------' + '\n')
+        setProcessingMessage(
+          (prev) =>
+            (prev + '\n' + payload.message || 'Running auto fix...') +
+            '\n' +
+            '--------------------' +
+            '\n'
+        )
       },
       'terraform:auto_fix:thinking': (payload: TerraformSimpleMessagePayload) => {
         setProcessingMessage(payload.accumulated_thought || 'Running auto fix...')
@@ -317,6 +482,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       }
 
       setIsProcessing(true)
+      resetValidationSteps()
       addMessage('user', 'Validate terraform')
       await wsService.validateTerraform(currentSessionId)
     } catch (error) {
@@ -386,6 +552,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     isProcessing,
     processingType,
     processingMessage,
+    validationSteps,
     connect,
     disconnect,
     sendMessage,

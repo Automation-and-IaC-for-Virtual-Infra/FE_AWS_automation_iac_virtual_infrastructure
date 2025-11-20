@@ -1,16 +1,17 @@
+import DiffViewer from '@/components/DiffViewer'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { LOCALSTORAGE_KEYS } from '@/constants/common'
 import { ROUTES } from '@/constants/route'
 import Editor from '@monaco-editor/react'
 import { DialogTitle } from '@radix-ui/react-dialog'
-import DiffViewer from '@/components/DiffViewer'
-import { Github, Sparkles, FileDiff, Check, RotateCcw } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
-import { handlePushToRepository, handleFixTerraform } from '../libs/actions'
 import { cx } from 'class-variance-authority'
+import { Check, FileDiff, Github, RotateCcw, Sparkles } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { handleFixTerraform, handlePushToRepository } from '../libs/actions'
 
 interface TerraformFile {
   file_name: string
@@ -41,6 +42,12 @@ export function PreviewTerraformModal({
   const [selectedFile, setSelectedFile] = useState<TerraformFile | null>(null)
   const [code, setCode] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'diff' | 'original'>('diff')
+
+  const canPushToRepo = useMemo(() => {
+    if (!showDiff) return true
+
+    return filesState.every((file) => !file.is_diff)
+  }, [filesState, showDiff])
 
   const handleFormatCode = () => {
     if (!code) return
@@ -126,14 +133,18 @@ export function PreviewTerraformModal({
       const contentToApply = newContent || selectedFile.file_content
       const res = await handleFixTerraform(sessionId, selectedFile.file_name, contentToApply)
       if (res.success) {
-        toast.success(`Successfully applied fix for ${selectedFile.file_name}`)
+        toast.success(`Successfully applied fix for ${selectedFile.file_name}`, {
+          position: 'bottom-right',
+        })
         const newFileState = {
           ...selectedFile,
           file_content: contentToApply,
           is_diff: false,
         }
         setSelectedFile(newFileState)
-        setFilesState(prev => prev.map((file) => (file.file_name === selectedFile.file_name ? newFileState : file)))
+        setFilesState((prev) =>
+          prev.map((file) => (file.file_name === selectedFile.file_name ? newFileState : file))
+        )
       } else {
         toast.error('Failed to apply fix')
       }
@@ -206,7 +217,7 @@ export function PreviewTerraformModal({
                       'cursor-pointer rounded px-2 py-1',
                       selectedFile?.file_name === file.file_name
                         ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-accent',
+                        : 'hover:bg-accent'
                     )}
                     onClick={() => {
                       setSelectedFile(file)
@@ -215,11 +226,7 @@ export function PreviewTerraformModal({
                     }}
                   >
                     {file.file_name}
-                    {file.is_diff && (
-                      <span className="ml-2 text-xs text-orange-500">
-                        *
-                      </span>
-                    )}
+                    {file.is_diff && <span className="ml-2 text-xs text-orange-500">*</span>}
                   </li>
                 ))}
               </ul>
@@ -286,15 +293,38 @@ export function PreviewTerraformModal({
                       <Button size="sm" variant="outline" onClick={handleDownload}>
                         Download
                       </Button>
-                      <Button
-                        size="sm"
-                        className="bg-green-600 text-white"
-                        onClick={onPushToRepo}
-                        disabled={isLoading}
-                      >
-                        <Github />
-                        {isLoading ? 'Pushing...' : 'Push to Repo'}
-                      </Button>
+                      {canPushToRepo ? (
+                        <Button
+                          size="sm"
+                          className="bg-green-600 text-white"
+                          onClick={onPushToRepo}
+                          disabled={isLoading}
+                        >
+                          <Github />
+                          {isLoading ? 'Pushing...' : 'Push to Repo'}
+                        </Button>
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              className="bg-green-600 opacity-50 hover:!bg-green-500"
+                            >
+                              <Github />
+                              Push to Repo
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="w-56 text-xs leading-relaxed text-center text-muted-foreground">
+                              <span className="block font-medium text-amber-700 mb-1">
+                                Cannot push yet
+                              </span>
+                              Please resolve all file conflicts before pushing changes to the
+                              repository.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </>
                   )}
                   <Button size="sm" variant="ghost" onClick={onClose}>

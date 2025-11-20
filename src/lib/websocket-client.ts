@@ -11,13 +11,14 @@ import {
   WebSocketEventType,
   WebSocketMessage,
 } from '@/types/websocket'
+import { toFrontendUrl } from '@/utils/url'
 
 let WS_BASE_URL = 'ws://localhost:8001'
 
 // Fetch WebSocket configuration from server-side API
 const fetchWebSocketConfig = async () => {
   try {
-    const response = await fetch(FRONTEND_API.GET_WEB_SOCKET_URL)
+    const response = await fetch(toFrontendUrl(FRONTEND_API.GET_WEB_SOCKET_URL))
     if (response.ok) {
       const config = await response.json()
       WS_BASE_URL = config.wsBaseUrl
@@ -34,7 +35,7 @@ export class WebSocketService {
   private ws: WebSocket | null = null
   private pingInterval: NodeJS.Timeout | null = null
   private reconnectAttempts = 0
-  private maxReconnectAttempts = 5
+  private maxReconnectAttempts = 2
   private reconnectDelay = 1000
   private listeners: Map<WebSocketEventType, ((payload: any) => void)[]> = new Map()
   private connectionListeners: ((state: WebSocketConnectionState) => void)[] = []
@@ -300,7 +301,7 @@ export class WebSocketService {
     return response
   }
 
-   async validateTerraform(session_id: string): Promise<any> {
+  async validateTerraform(session_id: string): Promise<any> {
     const response = await handleValidateTerraform(session_id)
 
     return response

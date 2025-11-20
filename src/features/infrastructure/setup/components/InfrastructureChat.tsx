@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { ShimmeringText } from '@/components/ui/shadcn-io/shimmering-text'
 import { ROUTES } from '@/constants/route'
 import { useWebSocket } from '@/features/websocket/context/WebSocketContext'
 import { cn } from '@/lib/utils'
@@ -12,6 +13,7 @@ import {
   AlertCircle,
   Brain,
   CheckCircle,
+  CircleAlert,
   Loader2,
   RefreshCw,
   Rocket,
@@ -24,10 +26,10 @@ import {
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { mappingInfraDataToReactFlow } from '../libs/utils'
 import { handleGetTerraformFiles } from '../libs/actions'
+import { mappingInfraDataToReactFlow } from '../libs/utils'
 import ModalWarning from './ModalWarning'
-import { ShimmeringText } from '@/components/ui/shadcn-io/shimmering-text'
+import { ValidationSteps } from './ValidationSteps'
 
 interface InfrastructureChatProps {
   isOpen: boolean
@@ -75,6 +77,7 @@ export function InfrastructureChat({
     processingMessage,
     validateTerraform,
     autoFixTerraform,
+    validationSteps,
   } = useWebSocket()
 
   const scrollToBottom = () => {
@@ -132,8 +135,6 @@ export function InfrastructureChat({
       handleClose()
     }
   }
-
-
 
   const handleRequestClose = () => {
     setShowCloseConfirm(true)
@@ -373,32 +374,37 @@ export function InfrastructureChat({
                       )}
 
                       {message.eventType === 'terraform:recommend_action' && (
-                        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-3 animate-fade-in w-[600px]">
-                          <div className="flex items-center gap-2 mb-2 text-red-700 dark:text-red-300">
-                            <CheckCircle className="w-4 h-4" />
-                            <span className="font-medium text-base">Validation result</span>
-                          </div>
-                          <p className="text-sm text-red-900 dark:text-red-100 mb-3 whitespace-pre-wrap">
-                            {/* {message.metadata?.message || message.content} */}
-                            {/* TODO: hard code */}
-                            Have some errors, do you want to auto fix?
-                          </p>
-                          <div className="flex flex-col sm:flex-row gap-2">
-                            <Button
-                              onClick={handleAutoFixTerraformClick}
-                              disabled={isProcessing || !sessionId || isAutoFixed}
-                              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                            >
-                              Auto fix
-                            </Button>
-                            <Button
-                              onClick={handleGoToPreviewFilesClick}
-                              disabled={!sessionId}
-                              variant="outline"
-                              className="flex-1"
-                            >
-                              Go to preview files
-                            </Button>
+                        <div className="space-y-4">
+                          <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-3 animate-fade-in min-w-[800px] max-w-[1000px]">
+                            <div className="flex items-center gap-2 mb-2 text-red-700 dark:text-red-300">
+                              <CircleAlert className="w-4 h-4" />
+                              <span className="font-medium text-base">Validation result</span>
+                            </div>
+
+                            <ValidationSteps steps={validationSteps} />
+
+                            <p className="text-sm text-red-900 dark:text-red-100 mb-3 whitespace-pre-wrap mt-2">
+                              {/* {message.metadata?.message || message.content} */}
+                              {/* TODO: hard code */}
+                              Have some errors, do you want to auto fix?
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <Button
+                                onClick={handleAutoFixTerraformClick}
+                                disabled={isProcessing || !sessionId || isAutoFixed}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                              >
+                                Auto fix
+                              </Button>
+                              <Button
+                                onClick={handleGoToPreviewFilesClick}
+                                disabled={!sessionId}
+                                variant="outline"
+                                className="flex-1"
+                              >
+                                Go to preview files
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -558,7 +564,9 @@ export function InfrastructureChat({
                     text={
                       processingType === 'spec'
                         ? 'Generating Infrastructure'
-                        : 'AI Assistant - Thinking'
+                        : processingType === 'terraform'
+                          ? 'Validating Terraform Files'
+                          : 'AI Assistant - Thinking'
                     }
                     duration={2}
                     transition={{
@@ -570,7 +578,6 @@ export function InfrastructureChat({
                     }}
                   />
                 </div>
-
                 <div
                   ref={processingRef}
                   className="max-h-[400px] overflow-y-auto text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap dark:shadow-gray-800 min-w-[600px]"
