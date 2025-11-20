@@ -1,3 +1,5 @@
+// TODO: remove later
+
 'use client'
 
 import { MessageContent } from '@/components/chat/MessageContent'

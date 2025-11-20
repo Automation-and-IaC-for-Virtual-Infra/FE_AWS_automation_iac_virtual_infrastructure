@@ -1,14 +1,11 @@
-/* ==================== AWS APIs ==================== */
-
-export const MOCK_API = {
-  NOTIFICATIONS: '/api/notifications',
-  AWS_NOTIFICATIONS: '/api/notifications/aws',
-}
-
 export const AWS_API = {
   GET_AWS_SERVICES: '/api/aws/service',
   GET_AWS_VERIFICATION: '/api/aws/verification',
   GET_AWS_METRIC: '/api/aws/metric',
+}
+
+export const FRONTEND_API = {
+  GET_WEB_SOCKET_URL: '/api/websocket-url',
 }
 
 export const COMMON_API = {
@@ -23,6 +20,8 @@ export const COMMON_API = {
 
   GEN_TF: '/gen_tf',
   GET_TF: '/get_tf',
+  VALIDATE_TF: '/validate_tf',
+  AUTO_FIX: '/auto_fix',
   FIX_TF: '/fix_tf',
   PUSH_TERRA: '/push_terra',
 

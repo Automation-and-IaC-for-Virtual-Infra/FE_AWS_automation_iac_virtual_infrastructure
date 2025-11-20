@@ -3,6 +3,7 @@ export const ENV = {
 
   FRONTEND_SERVER_URL: process.env.FRONTEND_SERVER_URL || '',
   BACKEND_SERVER_URL: process.env.BACKEND_SERVER_URL || '',
+  WS_BACKEND_SERVER_URL: process.env.WS_BACKEND_SERVER_URL || '',
   BACKEND_API_KEY: process.env.BACKEND_API_KEY || '',
   BACKEND_SERVER_URL_2: process.env.BACKEND_SERVER_URL_2 || '',
 
