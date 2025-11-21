@@ -1,6 +1,6 @@
 'use client'
 
-import { wsService } from '@/lib/websocket-client'
+import { useWebSocketClient } from '@/hooks/useWebsocket'
 import {
   ChatClarificationPayload,
   ChatContentPayload,
@@ -42,7 +42,7 @@ interface WebSocketContextType {
   processingType: 'chat' | 'spec' | 'terraform' | null
   processingMessage: string | null
   validationSteps: ValidationStep[]
-  connect: () => Promise<void>
+  connect: (ws_url: string) => Promise<void>
   disconnect: () => void
   sendMessage: (prompt: string) => Promise<void>
   generateSpec: () => Promise<void>
@@ -59,9 +59,6 @@ interface WebSocketProviderProps {
 
 export function WebSocketProvider({ children }: WebSocketProviderProps) {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
-  const [connectionState, setConnectionState] = useState<WebSocketConnectionState>(
-    wsService.getConnectionState()
-  )
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingType, setProcessingType] = useState<'chat' | 'spec' | 'terraform' | null>(null)
@@ -111,6 +108,11 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     },
   ])
 
+  const wsClient = useWebSocketClient()
+  const [connectionState, setConnectionState] = useState<WebSocketConnectionState>(
+    wsClient.getConnectionState()
+  )
+
   // Helper function to update validation step status
   const updateValidationStep = (
     stepId: string,
@@ -135,7 +137,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       setConnectionState(state)
     }
 
-    wsService.addConnectionListener(handleConnectionChange)
+    wsClient.addConnectionListener(handleConnectionChange)
 
     // Set up event listeners for all WebSocket events
     const eventListeners: Partial<Record<WebSocketEventType, (payload: any) => void>> = {
@@ -403,19 +405,19 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     // Register all event listeners
     Object.entries(eventListeners).forEach(([event, listener]) => {
       if (listener) {
-        wsService.addEventListener(event as WebSocketEventType, listener)
+        wsClient.addEventListener(event as WebSocketEventType, listener)
       }
     })
 
     return () => {
-      wsService.removeConnectionListener(handleConnectionChange)
+      wsClient.removeConnectionListener(handleConnectionChange)
       Object.entries(eventListeners).forEach(([event, listener]) => {
         if (listener) {
-          wsService.removeEventListener(event as WebSocketEventType, listener)
+          wsClient.removeEventListener(event as WebSocketEventType, listener)
         }
       })
     }
-  }, [])
+  }, [wsClient])
 
   const addMessage = (
     type: 'user' | 'assistant',
@@ -434,12 +436,17 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     setMessages((prev) => [...prev, newMessage])
   }
 
-  const connect = async () => {
+  const connect = async (ws_url: string) => {
     try {
+      if (!ws_url) {
+        console.error('No WebSocket URL provided')
+        return
+      }
+
       // Generate new session ID when connecting
       const newSessionId = generateUUID()
       setCurrentSessionId(newSessionId)
-      await wsService.connect(newSessionId)
+      await wsClient.connect(newSessionId, ws_url)
     } catch (error) {
       console.error('Failed to connect:', error)
       throw error
@@ -447,7 +454,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   }
 
   const disconnect = () => {
-    wsService.disconnect()
+    wsClient.disconnect()
     // Clear session ID when disconnecting
     setCurrentSessionId(null)
   }
@@ -463,7 +470,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       }
 
       setIsProcessing(true)
-      const _response = await wsService.sendChatMessage(prompt, currentSessionId)
+      const _response = await wsClient.sendChatMessage(prompt, currentSessionId)
     } catch (error) {
       console.error('Failed to send message:', error)
       addMessage(
@@ -484,7 +491,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       setIsProcessing(true)
       resetValidationSteps()
       addMessage('user', 'Validate terraform')
-      await wsService.validateTerraform(currentSessionId)
+      await wsClient.validateTerraform(currentSessionId)
     } catch (error) {
       console.error('Failed to validate terraform:', error)
       addMessage(
@@ -504,7 +511,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
       setIsProcessing(true)
       addMessage('user', 'Auto fix terraform')
-      await wsService.autoFixTerraform(currentSessionId)
+      await wsClient.autoFixTerraform(currentSessionId)
     } catch (error) {
       console.error('Failed to auto fix terraform:', error)
       addMessage(
@@ -524,7 +531,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
       setIsProcessing(true)
       addMessage('user', 'Generate infrastructure specification')
-      await wsService.generateSpec(currentSessionId)
+      await wsClient.generateSpec(currentSessionId)
     } catch (error) {
       console.error('Failed to generate spec:', error)
       addMessage(
