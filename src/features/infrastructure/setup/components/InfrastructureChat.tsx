@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { ShimmeringText } from '@/components/ui/shadcn-io/shimmering-text'
 import { ROUTES } from '@/constants/route'
 import { useWebSocket } from '@/features/websocket/context/WebSocketContext'
+import { getURLBE } from '@/features/websocket/libs/fetchers'
 import { cn } from '@/lib/utils'
 import { SpecConnection, SpecResource } from '@/types/websocket'
 import {
@@ -96,7 +97,8 @@ export function InfrastructureChat({
 
   const handleConnect = async () => {
     try {
-      await connect()
+      const ws_url = await getURLBE()
+      await connect(ws_url)
       toast.success('Connected to Infrastructure Assistant')
     } catch {
       toast.error('Failed to connect to Infrastructure Assistant')

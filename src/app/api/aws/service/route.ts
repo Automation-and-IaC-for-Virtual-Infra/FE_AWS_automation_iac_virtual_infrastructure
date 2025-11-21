@@ -7,9 +7,14 @@ const AWS_CLOUD_FORMATION_URL =
 export async function GET() {
   try {
     const res = await fetch(AWS_CLOUD_FORMATION_URL, {
-      next: { revalidate: 86400 * 7 }, // Revalidate once a week
+      cache: 'no-store', // Disable Next.js cache completely
       signal: AbortSignal.timeout(10000), // 10 seconds timeout
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
     })
     if (!res.ok) {
       return NextResponse.json({ error: 'Failed to fetch CloudFormation spec' }, { status: 500 })
